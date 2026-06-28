@@ -157,10 +157,13 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
 .stat-phrase-txt em{color:var(--ok);font-style:normal}
 .stat-phrase-txt s{color:var(--err);text-decoration:none}
 .radar-wrap{position:relative;width:100%;max-width:280px;margin:0 auto 16px}
-.league-compare{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-.lc-item{background:var(--s2);border-radius:8px;padding:10px;text-align:center}
-.lc-rank{font-size:20px;font-weight:800;color:var(--ac)}
-.lc-label{font-size:10px;color:var(--t3);margin-top:2px}
+.prof-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.pst{background:var(--s2);border-radius:10px;padding:12px 10px;text-align:center}
+.pst-ico{font-size:18px;margin-bottom:5px}
+.pst-val{font-size:24px;font-weight:800;color:var(--t1);line-height:1}
+.pst-den{font-size:13px;font-weight:500;color:var(--t3)}
+.pst-sub{font-size:10px;color:var(--ac);margin-top:3px;font-weight:600}
+.pst-lbl{font-size:10px;color:var(--t3);margin-top:4px;letter-spacing:.02em}
 .pbadge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}
 .pbadge-item{background:var(--s2);border-radius:10px;padding:10px 7px;text-align:center;border:.5px solid var(--br);cursor:default}
 .pbadge-unique{background:linear-gradient(135deg,rgba(61,142,240,.07),rgba(247,37,133,.07));border-color:rgba(61,142,240,.25)}
@@ -327,7 +330,7 @@ const MATCHES = [
   {id:9,group:"B",round:2,date:"2026-06-18",home:"Suisse",away:"Bosnie"},
   {id:10,group:"B",round:2,date:"2026-06-18",home:"Canada",away:"Qatar"},
   {id:11,group:"B",round:3,date:"2026-06-24",home:"Suisse",away:"Canada"},
-  {id:12,group:"B",round:3,date:"2026-06-24",home:"Qatar",away:"Bosnie"},
+  {id:12,group:"B",round:3,date:"2026-06-24",home:"Bosnie",away:"Qatar"},
   {id:13,group:"C",round:1,date:"2026-06-13",home:"Brésil",away:"Maroc"},
   {id:14,group:"C",round:1,date:"2026-06-13",home:"Haïti",away:"Écosse"},
   {id:15,group:"C",round:2,date:"2026-06-19",home:"Écosse",away:"Maroc"},
@@ -337,8 +340,8 @@ const MATCHES = [
   {id:19,group:"D",round:1,date:"2026-06-12",home:"États-Unis",away:"Paraguay"},
   {id:20,group:"D",round:1,date:"2026-06-14",home:"Australie",away:"Turquie"},
   {id:21,group:"D",round:2,date:"2026-06-19",home:"États-Unis",away:"Australie"},
-  {id:22,group:"D",round:2,date:"2026-06-19",home:"Paraguay",away:"Turquie"},
-  {id:23,group:"D",round:3,date:"2026-06-25",home:"États-Unis",away:"Turquie"},
+  {id:22,group:"D",round:2,date:"2026-06-19",home:"Turquie",away:"Paraguay"},
+  {id:23,group:"D",round:3,date:"2026-06-25",home:"Turquie",away:"États-Unis"},
   {id:24,group:"D",round:3,date:"2026-06-25",home:"Paraguay",away:"Australie"},
   {id:25,group:"E",round:1,date:"2026-06-14",home:"Allemagne",away:"Curaçao"},
   {id:26,group:"E",round:1,date:"2026-06-14",home:"Côte d'Ivoire",away:"Équateur"},
@@ -381,7 +384,7 @@ const MATCHES = [
   {id:63,group:"K",round:2,date:"2026-06-23",home:"Portugal",away:"Ouzbékistan"},
   {id:64,group:"K",round:2,date:"2026-06-23",home:"Colombie",away:"RD Congo"},
   {id:65,group:"K",round:3,date:"2026-06-27",home:"Colombie",away:"Portugal"},
-  {id:66,group:"K",round:3,date:"2026-06-27",home:"Ouzbékistan",away:"RD Congo"},
+  {id:66,group:"K",round:3,date:"2026-06-27",home:"RD Congo",away:"Ouzbékistan"},
   {id:67,group:"L",round:1,date:"2026-06-17",home:"Angleterre",away:"Croatie"},
   {id:68,group:"L",round:1,date:"2026-06-17",home:"Ghana",away:"Panama"},
   {id:69,group:"L",round:2,date:"2026-06-23",home:"Angleterre",away:"Ghana"},
@@ -547,8 +550,29 @@ function getRoundPts(pName, round) {
   return t;
 }
 
+function getGroupStagePts(pName) {
+  let t = 0;
+  MATCHES.forEach(m => {
+    const d = state.matchData[m.id]||{};
+    t += computePts(m.id, pName, d, (d.pronos||{})[pName]||{});
+  });
+  return t;
+}
+
+function getKnockoutPts(pName) {
+  const groupIds = new Set(MATCHES.map(m => m.id));
+  let t = 0;
+  Object.keys(state.matchData).forEach(id => {
+    if (groupIds.has(parseInt(id))) return;
+    const d = state.matchData[id]||{};
+    if (d.scoreHome === undefined || d.scoreHome === "") return;
+    t += computePts(parseInt(id), pName, d, (d.pronos||{})[pName]||{});
+  });
+  return t;
+}
+
 // ── PIN Saisie ──
-const SAISIE_PIN = "2026";
+const SAISIE_PIN = "2486";
 let pinBuffer = "";
 let saisieUnlocked = false;
 
@@ -659,8 +683,11 @@ function computeAllBadges() {
     return {name:p.name,rate:total?Math.round(exacts/total*100):0,exacts};
   }).sort((a,b)=>b.rate-a.rate);
 
-  // Bourreau J1
-  const bourreau = state.players.map(p => ({name:p.name,pts:getRoundPts(p.name,"J1")})).sort((a,b)=>b.pts-a.pts);
+  // Boss des Poules : meilleur total en phase de groupes (J1+J2+J3)
+  const bossPoules = state.players.map(p => ({name:p.name,pts:getGroupStagePts(p.name)})).sort((a,b)=>b.pts-a.pts);
+
+  // Boss Final : meilleur total en phase à élimination directe (matchs hors MATCHES)
+  const bossFinal = state.players.map(p => ({name:p.name,pts:getKnockoutPts(p.name)})).sort((a,b)=>b.pts-a.pts);
 
   // Baromètre : cote moyenne jouée
   const baro = state.players.map(p => {
@@ -922,9 +949,13 @@ function computeAllBadges() {
 
   return [
     {icon:"🏆",label:"Podium",slides:[{type:"podium",data:pl.slice(0,3)}]},
-    {icon:"⚡",label:"Bourreau J1",slides:[
-      {type:"badge",icon:"⚡",title:"Bourreau J1",holder:bourreau[0]?.name||"–",stat:bourreau[0]?.pts||0,statl:"pts sur la journée",desc:"A tout écrasé lors de la première journée.",color:"#e65c35"},
-      pod("Classement · Bourreau J1",bourreau,p=>p.pts+" pts","#e65c35")
+    {icon:"🏟️",label:"Boss des Poules",slides:[
+      {type:"badge",icon:"🏟️",title:"Boss des Poules",holder:bossPoules[0]?.name||"–",stat:bossPoules[0]?.pts||0,statl:"pts en phase de groupes",desc:"A dominé la phase de poules de bout en bout. Roi des groupes.",color:"#e65c35"},
+      pod("Classement · Phase de groupes",bossPoules,p=>p.pts+" pts","#e65c35")
+    ]},
+    {icon:"⚡",label:"Boss Final",slides:[
+      {type:"badge",icon:"⚡",title:"Boss Final",holder:bossFinal[0]?.pts>0?bossFinal[0]?.name||"–":"–",stat:bossFinal[0]?.pts||0,statl:"pts en phase à élimination directe",desc:"Réservé au vrai champion. Brille quand les enjeux sont au maximum.",color:"#f72585"},
+      pod("Classement · Phase finale",bossFinal.filter(p=>p.pts>0),p=>p.pts+" pts","#f72585")
     ]},
     {icon:"😤",label:"Le Maudit",slides:[
       {type:"badge",icon:"😤",title:"Le Maudit",holder:maudit[0]?.name||"–",stat:maudit[0]?.near||0,statl:"pronos à ±1 but du score exact",desc:"Si proche… mais si loin. La poisse incarnée.",color:"#f05252"},
@@ -962,10 +993,6 @@ function computeAllBadges() {
     {icon:"🤷",label:"Nonchalant",slides:[
       {type:"badge",icon:"🤷",title:"Nonchalant",holder:nonchalant[0]?.name||"–",stat:nonchalant[0]?.count||0,statl:"pronos oubliés quand personne n'avait bon",desc:"N'a pas pronostiqué… mais de toute façon tout le monde se plantait.",color:"#4cc9f0"},
       pod("Classement · Nonchalant",nonchalant,p=>p.count+" fois","#4cc9f0")
-    ]},
-    {icon:"🎰",label:"Va Banque",slides:[
-      {type:"badge",icon:"🎰",title:"Va Banque",holder:vaBanque[0]?.name||"–",stat:vaBanque[0]?.used||0,statl:"paris ×2 utilisés",desc:"Mise double à chaque occasion. Courage ou témérité ?",color:"#f72585"},
-      pod("Classement · Va Banque",vaBanque,p=>p.used+" ×2","#f72585")
     ]},
     {icon:"🎯",label:"Sniper ×2",slides:[
       {type:"badge",icon:"🎯",title:"Sniper ×2",holder:sniperX2[0]?.used?sniperX2[0]?.name||"–":"–",stat:sniperX2[0]?.used?(sniperX2[0]?.rate||0)+"%":"–",statl:"scores exacts sur ses paris ×2 ("+(sniperX2[0]?.exacts||0)+" exacts)",desc:"Quand il double la mise, il vise le score exact. Précision chirurgicale.",color:"#8338ec"},
@@ -1534,6 +1561,17 @@ function buildPlayerProfile(pName) {
   const myRank = allScores.indexOf(total) + 1;
   const allExacts = state.players.map(p => getExactsUpTo(p.name, allIds)).sort((a,b)=>b-a);
   const exactRank = allExacts.indexOf(exacts) + 1;
+  // Rang par bons résultats
+  const allGoods = state.players.map(p => {
+    let g=0;
+    allIds.forEach(id=>{const d=state.matchData[id]||{},pr=(d.pronos||{})[p.name]||{};
+      if(!d||d.scoreHome===undefined||pr.home===undefined||pr.home==="")return;
+      const rH=parseInt(d.scoreHome),rA=parseInt(d.scoreAway),pH=parseInt(pr.home),pA=parseInt(pr.away);
+      if(!isNaN(rH)&&!isNaN(pH)&&Math.sign(rH-rA)===Math.sign(pH-pA))g++;
+    });
+    return g;
+  }).sort((a,b)=>b-a);
+  const goodRank = allGoods.indexOf(goods) + 1;
   const allAvgCote = state.players.map(p => {
     let s=0,c=0;
     allIds.forEach(id=>{const d=state.matchData[id]||{},pr=(d.pronos||{})[p.name]||{};
@@ -1565,7 +1603,7 @@ function buildPlayerProfile(pName) {
   phrases.push({ico:"📈", txt: "<b>"+favRate+"%</b> de tes pronos misent sur le favori (cote < 80)"});
   if (drawPronos > 0) phrases.push({ico:"🤝", txt: "Tu as pronostiqué <b>"+drawPronos+" nul"+(drawPronos>1?"s":"")+"</b> — "+drawCorrect+" correct"+(drawCorrect>1?"s":"")+" ("+drawRate+"%)"});
 
-  return { archetype, arcColor, exactRate, goodRate, avgCote, favRate, maxStreak, exacts, total, myRank, exactRank, riskRank, radarData, phrases, nearMiss };
+  return { archetype, arcColor, exactRate, goodRate, avgCote, favRate, maxStreak, exacts, goods, played:coteCount, total, myRank, exactRank, goodRank, riskRank, radarData, phrases, nearMiss };
 }
 
 function renderProfil() {
@@ -1599,13 +1637,14 @@ function renderProfilCard(pName) {
   html += '<div class="prof-archetype" style="background:'+prof.arcColor+'22;color:'+prof.arcColor+'">'+prof.archetype+'</div></div>';
   html += '</div>';
 
-  // Position dans la ligue
-  html += '<div class="sl" style="padding:0 0 8px">Position dans la ligue</div>';
-  html += '<div class="league-compare">';
-  html += '<div class="lc-item"><div class="lc-rank">'+prof.myRank+'/'+n+'</div><div class="lc-label">Classement général</div></div>';
-  html += '<div class="lc-item"><div class="lc-rank">'+prof.exactRank+'/'+n+'</div><div class="lc-label">Scores exacts</div></div>';
-  html += '<div class="lc-item"><div class="lc-rank">'+prof.riskRank+'/'+n+'</div><div class="lc-label">Audace (cote moy.)</div></div>';
-  html += '<div class="lc-item"><div class="lc-rank" style="color:var(--ok)">'+prof.total+'</div><div class="lc-label">Points cumulés</div></div>';
+  // Stats principales
+  html += '<div class="sl" style="padding:0 0 8px">Statistiques</div>';
+  const ord = n => n===1?"er":n===2?"e":n===3?"e":"e";
+  html += '<div class="prof-stats-grid">';
+  html += '<div class="pst"><div class="pst-ico">🏆</div><div class="pst-val">'+prof.myRank+'<span class="pst-den">/'+n+'</span></div><div class="pst-lbl">Classement général</div></div>';
+  html += '<div class="pst"><div class="pst-ico">📊</div><div class="pst-val">'+prof.total+'<span class="pst-den"> pts</span></div><div class="pst-lbl">Points totaux</div></div>';
+  html += '<div class="pst"><div class="pst-ico">⚽</div><div class="pst-val">'+prof.goods+'<span class="pst-den">/'+prof.played+'</span></div><div class="pst-sub">'+prof.goodRate+'% · '+prof.goodRank+ord(prof.goodRank)+' ligue</div><div class="pst-lbl">Bons résultats</div></div>';
+  html += '<div class="pst"><div class="pst-ico">✨</div><div class="pst-val">'+prof.exacts+'<span class="pst-den">/'+prof.played+'</span></div><div class="pst-sub">'+prof.exactRate+'% · '+prof.exactRank+ord(prof.exactRank)+' ligue</div><div class="pst-lbl">Scores exacts</div></div>';
   html += '</div>';
   html += '</div>';
 
