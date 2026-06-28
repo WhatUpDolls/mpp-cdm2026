@@ -161,6 +161,13 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
 .lc-item{background:var(--s2);border-radius:8px;padding:10px;text-align:center}
 .lc-rank{font-size:20px;font-weight:800;color:var(--ac)}
 .lc-label{font-size:10px;color:var(--t3);margin-top:2px}
+.pbadge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}
+.pbadge-item{background:var(--s2);border-radius:10px;padding:10px 7px;text-align:center;border:.5px solid var(--br);cursor:default}
+.pbadge-unique{background:linear-gradient(135deg,rgba(61,142,240,.07),rgba(247,37,133,.07));border-color:rgba(61,142,240,.25)}
+.pbadge-ico{font-size:22px;margin-bottom:4px}
+.pbadge-lbl{font-size:10px;font-weight:700;color:var(--t1);line-height:1.2}
+.pbadge-desc{font-size:9px;color:var(--t3);margin-top:2px;line-height:1.3}
+.pbadge-tier{display:inline-block;font-size:8px;padding:1px 6px;border-radius:6px;margin-top:4px;font-weight:700;letter-spacing:.04em}
 /* Chart classement */
 .rank-chart-wrap{margin:0 16px 12px;background:var(--s1);border-radius:var(--r);padding:14px}
 .rank-chart-title{font-size:11px;font-weight:600;color:var(--t2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em}
@@ -847,21 +854,190 @@ function computeAllBadges() {
     return {group:bestGroup,count:bestCount,total:bestTotal};
   })();
 
+  // Blitz 😴 : oubli prono quand ≥60% des autres avaient bon résultat
+  const blitz = state.players.map(p => {
+    let count=0;
+    allIds.forEach(id=>{
+      const d=state.matchData[id]||{};
+      if(d.scoreHome===undefined||d.scoreHome==="") return;
+      const myPr=(d.pronos||{})[p.name]||{};
+      if(myPr.home!==undefined&&myPr.home!=="") return; // a pronostiqué → pas un oubli
+      const others=state.players.filter(x=>x.name!==p.name);
+      let withProno=0,good=0;
+      others.forEach(x=>{
+        const pr=(d.pronos||{})[x.name]||{};
+        if(pr.home===undefined||pr.home==="") return;
+        withProno++;
+        const rH=parseInt(d.scoreHome),rA=parseInt(d.scoreAway),pH=parseInt(pr.home),pA=parseInt(pr.away);
+        if(!isNaN(rH)&&!isNaN(pH)&&Math.sign(rH-rA)===Math.sign(pH-pA)) good++;
+      });
+      if(withProno>0&&good/withProno>=0.6) count++;
+    });
+    return {name:p.name,count};
+  }).sort((a,b)=>b.count-a.count);
+
+  // Nonchalant 🤷 : oubli prono quand personne n'avait bon résultat
+  const nonchalant = state.players.map(p => {
+    let count=0;
+    allIds.forEach(id=>{
+      const d=state.matchData[id]||{};
+      if(d.scoreHome===undefined||d.scoreHome==="") return;
+      const myPr=(d.pronos||{})[p.name]||{};
+      if(myPr.home!==undefined&&myPr.home!=="") return;
+      const others=state.players.filter(x=>x.name!==p.name);
+      let withProno=0,good=0;
+      others.forEach(x=>{
+        const pr=(d.pronos||{})[x.name]||{};
+        if(pr.home===undefined||pr.home==="") return;
+        withProno++;
+        const rH=parseInt(d.scoreHome),rA=parseInt(d.scoreAway),pH=parseInt(pr.home),pA=parseInt(pr.away);
+        if(!isNaN(rH)&&!isNaN(pH)&&Math.sign(rH-rA)===Math.sign(pH-pA)) good++;
+      });
+      if(withProno>0&&good===0) count++;
+    });
+    return {name:p.name,count};
+  }).sort((a,b)=>b.count-a.count);
+
+  // x2 stats : utilisés, exacts, pts engrangés
+  const x2stats = state.players.map(p=>{
+    let used=0,exacts=0,pts=0;
+    allIds.forEach(id=>{
+      const d=state.matchData[id]||{},pr=(d.pronos||{})[p.name]||{};
+      if(!pr.x2||pr.home===undefined||pr.home==="") return;
+      used++;
+      const rH=parseInt(d.scoreHome),rA=parseInt(d.scoreAway),pH=parseInt(pr.home),pA=parseInt(pr.away);
+      if(!isNaN(rH)&&!isNaN(pH)&&pH===rH&&pA===rA) exacts++;
+      pts+=computePts(id,p.name,d,pr);
+    });
+    return {name:p.name,used,exacts,pts,rate:used?Math.round(exacts/used*100):0};
+  });
+  const vaBanque=[...x2stats].sort((a,b)=>b.used-a.used);
+  const sniperX2=[...x2stats].sort((a,b)=>b.rate-a.rate||b.exacts-a.exacts);
+  const doubleOr=[...x2stats].sort((a,b)=>b.pts-a.pts);
+
+  // Helpers podium
+  const pCol=name=>{const i=state.players.findIndex(p=>p.name===name);return i>=0?COLORS[i%COLORS.length]:"#888";};
+  const top=(arr,fmt,n=5)=>arr.slice(0,n).map(p=>({name:p.name,stat:fmt(p),col:pCol(p.name)}));
+  const pod=(title,arr,fmt,color)=>({type:"podium-stat",title,items:top(arr,fmt),color});
+
   return [
     {icon:"🏆",label:"Podium",slides:[{type:"podium",data:pl.slice(0,3)}]},
-    {icon:"⚡",label:"Bourreau J1",slides:[{type:"badge",icon:"⚡",title:"Bourreau J1",holder:bourreau[0]?.name||"–",stat:bourreau[0]?.pts||0,statl:"pts sur la journée",desc:"A tout écrasé lors de la première journée.",color:"#e65c35"}]},
-    {icon:"😤",label:"Le Maudit",slides:[{type:"badge",icon:"😤",title:"Le Maudit",holder:maudit[0]?.name||"–",stat:maudit[0]?.near||0,statl:"pronos à ±1 but du score exact",desc:"Si proche… mais si loin. La poisse incarnée.",color:"#f05252"}]},
-    {icon:"🔮",label:"Le Devin",slides:[{type:"badge",icon:"🔮",title:"Le Devin",holder:devin[0]?.name||"–",stat:(devin[0]?.rate||0)+"%",statl:devin[0]?.exacts+" scores exacts",desc:"Voyant ou calculateur ? Les deux peut-être.",color:"#9b5de5"}]},
-    {icon:"🎲",label:"Baromètre",slides:[{type:"badge",icon:"🎲",title:"Baromètre du risque",holder:baro[0]?.name||"–",stat:baro[0]?.avg||0,statl:"cote moyenne jouée",desc:"Joue les plus grosses cotes, sans peur de rien.",color:"#f59e0b"}]},
-    {icon:"🐑",label:"Le Mouton",slides:[{type:"badge",icon:"🐑",title:"Le Mouton",holder:mouton[0]?.name||"–",stat:(mouton[0]?.rate||0)+"%",statl:"matchs pronos comme la majorité",desc:"Suit le troupeau… mais ça marche parfois !",color:"#4cc9f0"}]},
-    {icon:"🌟",label:"Nostradamus",slides:[{type:"badge",icon:"🌟",title:"Nostradamus",holder:nostra[0]?.name||"–",stat:nostra[0]?.pts||0,statl:"pts sur les matchs surprises (cote >80)",desc:"Maîtrise l'imprévisible. Roi des coups de poker.",color:"#f5c842"}]},
+    {icon:"⚡",label:"Bourreau J1",slides:[
+      {type:"badge",icon:"⚡",title:"Bourreau J1",holder:bourreau[0]?.name||"–",stat:bourreau[0]?.pts||0,statl:"pts sur la journée",desc:"A tout écrasé lors de la première journée.",color:"#e65c35"},
+      pod("Classement · Bourreau J1",bourreau,p=>p.pts+" pts","#e65c35")
+    ]},
+    {icon:"😤",label:"Le Maudit",slides:[
+      {type:"badge",icon:"😤",title:"Le Maudit",holder:maudit[0]?.name||"–",stat:maudit[0]?.near||0,statl:"pronos à ±1 but du score exact",desc:"Si proche… mais si loin. La poisse incarnée.",color:"#f05252"},
+      pod("Classement · Le Maudit",maudit,p=>p.near+" près-ratés","#f05252")
+    ]},
+    {icon:"🔮",label:"Le Devin",slides:[
+      {type:"badge",icon:"🔮",title:"Le Devin",holder:devin[0]?.name||"–",stat:(devin[0]?.rate||0)+"%",statl:devin[0]?.exacts+" scores exacts",desc:"Voyant ou calculateur ? Les deux peut-être.",color:"#9b5de5"},
+      pod("Classement · Le Devin",devin,p=>p.rate+"% ("+p.exacts+" exacts)","#9b5de5")
+    ]},
+    {icon:"🎲",label:"Baromètre",slides:[
+      {type:"badge",icon:"🎲",title:"Baromètre du risque",holder:baro[0]?.name||"–",stat:baro[0]?.avg||0,statl:"cote moyenne jouée",desc:"Joue les plus grosses cotes, sans peur de rien.",color:"#f59e0b"},
+      pod("Classement · Baromètre",baro,p=>p.avg+" cote moy.","#f59e0b")
+    ]},
+    {icon:"🐑",label:"Le Mouton",slides:[
+      {type:"badge",icon:"🐑",title:"Le Mouton",holder:mouton[0]?.name||"–",stat:(mouton[0]?.rate||0)+"%",statl:"matchs pronos comme la majorité",desc:"Suit le troupeau… mais ça marche parfois !",color:"#4cc9f0"},
+      pod("Classement · Le Mouton",mouton,p=>p.rate+"% ("+p.count+" fois)","#4cc9f0")
+    ]},
+    {icon:"🌟",label:"Nostradamus",slides:[
+      {type:"badge",icon:"🌟",title:"Nostradamus",holder:nostra[0]?.name||"–",stat:nostra[0]?.pts||0,statl:"pts sur les matchs surprises (cote >80)",desc:"Maîtrise l'imprévisible. Roi des coups de poker.",color:"#f5c842"},
+      pod("Classement · Nostradamus",nostra,p=>p.pts+" pts surprise","#f5c842")
+    ]},
     {icon:"❤️",label:"Les Amoureux",slides:[{type:"relational",icon:"❤️",title:"Les Amoureux",pair:amoureux.pair||["–","–"],stat:amoureux.count,statl:"pronostics identiques sur "+amoureux.total+" matchs",desc:"Ces deux-là pensent exactement pareil. Soulmates des pronos.",color:"#f72585"}]},
     {icon:"⚔️",label:"Les Rivaux",slides:[{type:"relational",icon:"⚔️",title:"Les Rivaux",pair:rivaux.pair||["–","–"],stat:rivaux.count,statl:"désaccords sur le résultat ("+rivaux.total+" matchs)",desc:"Ils ne sont jamais d'accord. L'un dit 1, l'autre dit 2.",color:"#f05252"}]},
     {icon:"👯",label:"Les Jumeaux",slides:[{type:"relational",icon:"👯",title:"Les Jumeaux",pair:jumeaux.pair||["–","–"],stat:jumeaux.same,statl:"même résultat pronostiqué sur "+jumeaux.total+" matchs",desc:"Même vision du jeu, exécution différente. Deux cerveaux, un seul logiciel.",color:"#4cc9f0"}]},
     {icon:"📡",label:"Même Longueur d'Onde",slides:[{type:"relational",icon:"📡",title:"Même Longueur d'Onde",pair:longueurDonde.pair||["–","–"],stat:longueurDonde.corr>0?Math.round(longueurDonde.corr*100)+"%":"–",statl:"corrélation des courbes de points",desc:"Leurs classements évoluent en parfaite synchronie. Quand l'un monte, l'autre monte.",color:"#9b5de5"}]},
-    {icon:"🐕",label:"Idéfix",slides:[{type:"badge",icon:"🐕",title:"Idéfix",holder:idefix[0]?.name||"–",stat:(idefix[0]?.rate||0)+"%",statl:"des pronos sur le favori ("+idefix[0]?.count+"/"+idefix[0]?.total+" matchs)",desc:"Suit ses favoris quoiqu'il arrive. Jamais de surprise, toujours la sécurité.",color:"#22c97a"}]},
+    {icon:"🐕",label:"Idéfix",slides:[
+      {type:"badge",icon:"🐕",title:"Idéfix",holder:idefix[0]?.name||"–",stat:(idefix[0]?.rate||0)+"%",statl:"des pronos sur le favori ("+idefix[0]?.count+"/"+idefix[0]?.total+" matchs)",desc:"Suit ses favoris quoiqu'il arrive. Jamais de surprise, toujours la sécurité.",color:"#22c97a"},
+      pod("Classement · Idéfix",idefix,p=>p.rate+"% ("+p.count+"/"+p.total+")","#22c97a")
+    ]},
     {icon:"🎪",label:"Le Club",slides:[{type:"club",icon:"🎪",title:"Le Club",group:leClub.group||["–","–","–"],stat:leClub.count,statl:"mêmes pronos sur "+leClub.total+" matchs",desc:"Ces trois-là ont un abonnement au cerveau collectif. Un vote, trois bulletins.",color:"#fb5607"}]},
+    {icon:"😴",label:"Blitz",slides:[
+      {type:"badge",icon:"😴",title:"Blitz",holder:blitz[0]?.name||"–",stat:blitz[0]?.count||0,statl:"pronos oubliés quand +60% avaient bon",desc:"A loupé les matchs que tout le monde allait réussir. L'art d'être absent au mauvais moment.",color:"#f59e0b"},
+      pod("Classement · Blitz",blitz,p=>p.count+" fois","#f59e0b")
+    ]},
+    {icon:"🤷",label:"Nonchalant",slides:[
+      {type:"badge",icon:"🤷",title:"Nonchalant",holder:nonchalant[0]?.name||"–",stat:nonchalant[0]?.count||0,statl:"pronos oubliés quand personne n'avait bon",desc:"N'a pas pronostiqué… mais de toute façon tout le monde se plantait.",color:"#4cc9f0"},
+      pod("Classement · Nonchalant",nonchalant,p=>p.count+" fois","#4cc9f0")
+    ]},
+    {icon:"🎰",label:"Va Banque",slides:[
+      {type:"badge",icon:"🎰",title:"Va Banque",holder:vaBanque[0]?.name||"–",stat:vaBanque[0]?.used||0,statl:"paris ×2 utilisés",desc:"Mise double à chaque occasion. Courage ou témérité ?",color:"#f72585"},
+      pod("Classement · Va Banque",vaBanque,p=>p.used+" ×2","#f72585")
+    ]},
+    {icon:"🎯",label:"Sniper ×2",slides:[
+      {type:"badge",icon:"🎯",title:"Sniper ×2",holder:sniperX2[0]?.used?sniperX2[0]?.name||"–":"–",stat:sniperX2[0]?.used?(sniperX2[0]?.rate||0)+"%":"–",statl:"scores exacts sur ses paris ×2 ("+(sniperX2[0]?.exacts||0)+" exacts)",desc:"Quand il double la mise, il vise le score exact. Précision chirurgicale.",color:"#8338ec"},
+      pod("Classement · Sniper ×2",sniperX2.filter(p=>p.used>0),p=>p.rate+"% ("+p.exacts+" exacts)","#8338ec")
+    ]},
+    {icon:"💥",label:"Double Or",slides:[
+      {type:"badge",icon:"💥",title:"Double Or",holder:doubleOr[0]?.used?doubleOr[0]?.name||"–":"–",stat:doubleOr[0]?.used?doubleOr[0]?.pts||0:"–",statl:"pts engrangés sur ses paris ×2",desc:"A transformé ses doublements en mines d'or. Le ×2 comme art de vivre.",color:"#f5c842"},
+      pod("Classement · Double Or",doubleOr.filter(p=>p.used>0),p=>p.pts+" pts ×2","#f5c842")
+    ]},
   ];
+}
+
+// ── Badges atteignables par joueur (achievements personnels) ─────────────────
+function computePlayerBadges(pName) {
+  const allIds = Object.keys(state.matchData).map(Number).filter(id => {
+    const d = state.matchData[id];
+    return d && d.scoreHome !== undefined && d.scoreHome !== "";
+  });
+
+  let exacts=0, maxStreak=0, curStreak=0;
+  let x2Used=0, x2Exacts=0, blitzCount=0, nonchalantCount=0;
+
+  allIds.forEach(id => {
+    const d = state.matchData[id]||{};
+    const pr = (d.pronos||{})[pName]||{};
+
+    if (pr.home === undefined || pr.home === "") {
+      // Prono oublié — calcule Blitz / Nonchalant
+      const others = state.players.filter(x=>x.name!==pName);
+      let withProno=0, good=0;
+      others.forEach(x=>{
+        const opr=(d.pronos||{})[x.name]||{};
+        if(opr.home===undefined||opr.home==="") return;
+        withProno++;
+        const rH=parseInt(d.scoreHome),rA=parseInt(d.scoreAway),pH=parseInt(opr.home),pA=parseInt(opr.away);
+        if(!isNaN(rH)&&!isNaN(pH)&&Math.sign(rH-rA)===Math.sign(pH-pA)) good++;
+      });
+      if(withProno>0){
+        if(good/withProno>=0.6) blitzCount++;
+        else if(good===0) nonchalantCount++;
+      }
+      return;
+    }
+
+    const rH=parseInt(d.scoreHome),rA=parseInt(d.scoreAway),pH=parseInt(pr.home),pA=parseInt(pr.away);
+    if(isNaN(rH)||isNaN(pH)) return;
+    const isExact=pH===rH&&pA===rA;
+    const isGood=Math.sign(rH-rA)===Math.sign(pH-pA);
+    if(isExact) exacts++;
+    if(isGood){curStreak++;maxStreak=Math.max(maxStreak,curStreak);}else curStreak=0;
+    if(pr.x2){x2Used++;if(isExact)x2Exacts++;}
+  });
+
+  const badges=[];
+  // Scores exacts
+  if(exacts>=1) badges.push({icon:"🎯",label:"1er Exact",desc:"Premier score exact trouvé !",tier:"bronze"});
+  if(exacts>=5) badges.push({icon:"🔮",label:"Voyant",desc:"5 scores exacts",tier:"silver"});
+  if(exacts>=10) badges.push({icon:"🌟",label:"Oracle",desc:"10 scores exacts",tier:"gold"});
+  // Séries
+  if(maxStreak>=3) badges.push({icon:"🔥",label:"En Série",desc:"3 bons résultats d'affilée",tier:"bronze"});
+  if(maxStreak>=5) badges.push({icon:"⚡",label:"En Feu",desc:"5 bons résultats d'affilée",tier:"silver"});
+  if(maxStreak>=7) badges.push({icon:"🚀",label:"Inarrêtable",desc:"7 bons résultats d'affilée",tier:"gold"});
+  // ×2
+  if(x2Used>=1) badges.push({icon:"🎰",label:"Joueur",desc:"Premier pari ×2 utilisé",tier:"bronze"});
+  if(x2Used>=5) badges.push({icon:"💎",label:"All-in",desc:"5 paris ×2 utilisés",tier:"silver"});
+  if(x2Exacts>=1) badges.push({icon:"💥",label:"Sniper",desc:"Score exact sur un pari ×2 !",tier:"silver"});
+  if(x2Exacts>=3) badges.push({icon:"🔱",label:"Triple Jackpot",desc:"3 scores exacts sur des ×2",tier:"gold"});
+  // Blitz / Nonchalant
+  if(blitzCount>=1) badges.push({icon:"😴",label:"Blitz ×"+blitzCount,desc:blitzCount+" prono"+(blitzCount>1?"s":"")+" oublié"+(blitzCount>1?"s":"")+" quand les autres avaient bon",tier:"bronze"});
+  if(nonchalantCount>=1) badges.push({icon:"🤷",label:"Nonchalant ×"+nonchalantCount,desc:nonchalantCount+" prono"+(nonchalantCount>1?"s":"")+" oublié"+(nonchalantCount>1?"s":"")+" — tout le monde se plantait anyway",tier:"bronze"});
+
+  return badges;
 }
 
 function renderBadges() {
@@ -910,6 +1086,20 @@ function renderSlide() {
       '<div class="podcol"><div class="podname">'+(p2?.name||"–")+'</div><div class="podpts">'+(p2?.pts||0)+' pts</div><div class="podblk" style="width:76px;height:85px;background:var(--silver)">2</div></div>'+
       '<div class="podcol"><div class="podname" style="font-weight:700">'+(p1?.name||"–")+'</div><div class="podpts" style="color:var(--gold)">'+(p1?.pts||0)+' pts</div><div class="podblk" style="width:86px;height:115px;background:var(--gold)">1</div></div>'+
       '<div class="podcol"><div class="podname">'+(p3?.name||"–")+'</div><div class="podpts">'+(p3?.pts||0)+' pts</div><div class="podblk" style="width:68px;height:65px;background:var(--bronze)">3</div></div>'+
+      '</div></div>';
+  } else if (s.type==="podium-stat") {
+    const medals=["🥇","🥈","🥉","4e","5e"];
+    html='<div class="bcrd" style="width:100%;max-width:320px">'+
+      '<div class="btitle" style="font-size:15px;margin-bottom:14px">'+s.title+'</div>'+
+      '<div style="display:flex;flex-direction:column;gap:7px;width:100%">'+
+      (s.items||[]).map((item,i)=>
+        '<div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.05);border-radius:10px;padding:9px 12px">'+
+          '<div style="font-size:17px;width:26px;text-align:center;flex-shrink:0">'+medals[i]+'</div>'+
+          '<div style="width:32px;height:32px;border-radius:50%;background:'+item.col+'22;color:'+item.col+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:1.5px solid '+item.col+';flex-shrink:0">'+item.name.substring(0,2).toUpperCase()+'</div>'+
+          '<div style="flex:1;font-size:13px;font-weight:600;color:var(--t1);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+item.name+'</div>'+
+          '<div style="font-size:12px;color:'+s.color+';font-weight:700;flex-shrink:0">'+item.stat+'</div>'+
+        '</div>'
+      ).join("")+
       '</div></div>';
   } else if (s.type==="club") {
     const grp = s.group||["–","–","–"];
@@ -1430,6 +1620,49 @@ function renderProfilCard(pName) {
   html += '<div class="sl" style="padding:0 0 10px">Ton parcours en chiffres</div>';
   html += prof.phrases.map(p => '<div class="stat-phrase"><div class="stat-phrase-ico">'+p.ico+'</div><div class="stat-phrase-txt">'+p.txt+'</div></div>').join("");
   html += '</div>';
+
+  // ── Badges ──
+  const allBadges = computeAllBadges();
+  const uniqueHeld = allBadges.filter(b => {
+    const s = b.slides[0];
+    if (s.type==="relational") return s.pair?.includes(pName);
+    if (s.type==="club") return s.group?.includes(pName);
+    if (s.type==="badge") return s.holder===pName;
+    return false;
+  });
+  const earned = computePlayerBadges(pName);
+
+  if (uniqueHeld.length > 0) {
+    html += '<div class="prof-card">';
+    html += '<div class="sl" style="padding:0 0 10px">🏆 Badges uniques détenus</div>';
+    html += '<div class="pbadge-grid">';
+    html += uniqueHeld.map(b => {
+      const s = b.slides[0];
+      const sub = s.type==="relational" ? s.pair?.filter(x=>x!==pName).join(", ") : s.type==="club" ? s.group?.filter(x=>x!==pName).join(", ") : s.statl||"";
+      return '<div class="pbadge-item pbadge-unique">'+
+        '<div class="pbadge-ico">'+b.icon+'</div>'+
+        '<div class="pbadge-lbl">'+s.title+'</div>'+
+        '<div class="pbadge-desc">'+sub+'</div>'+
+        '</div>';
+    }).join("");
+    html += '</div></div>';
+  }
+
+  if (earned.length > 0) {
+    const tierColors = {gold:"#f5c842",silver:"#a8a8b3",bronze:"#cd7f32"};
+    html += '<div class="prof-card">';
+    html += '<div class="sl" style="padding:0 0 10px">🎖 Badges débloqués</div>';
+    html += '<div class="pbadge-grid">';
+    html += earned.map(b =>
+      '<div class="pbadge-item">'+
+        '<div class="pbadge-ico">'+b.icon+'</div>'+
+        '<div class="pbadge-lbl">'+b.label+'</div>'+
+        '<div class="pbadge-desc">'+b.desc+'</div>'+
+        '<span class="pbadge-tier" style="background:'+tierColors[b.tier]+'22;color:'+tierColors[b.tier]+'">'+b.tier+'</span>'+
+        '</div>'
+    ).join("");
+    html += '</div></div>';
+  }
 
   document.getElementById("profil-body").innerHTML = html;
 
