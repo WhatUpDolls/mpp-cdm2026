@@ -166,6 +166,21 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
 .rank-chart-title{font-size:11px;font-weight:600;color:var(--t2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em}
 .notif{position:fixed;bottom:calc(var(--nav) + 10px);left:50%;transform:translateX(-50%) translateY(20px);background:var(--s1);color:var(--t1);padding:8px 16px;border-radius:20px;font-size:12px;opacity:0;transition:all .2s;z-index:200;border:.5px solid var(--br2);white-space:nowrap;pointer-events:none}
 .notif.on{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ── Slider fixe Classement ── */
+.slider-fixed{position:fixed;bottom:var(--nav);left:0;right:0;background:var(--bg);border-top:.5px solid var(--br);padding:8px 16px 10px;z-index:40;display:none}
+.slider-fixed.on{display:block}
+#s-rank{padding-bottom:70px}
+/* ── PIN overlay Saisie ── */
+.pin-overlay{position:absolute;inset:0;background:var(--bg);z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+.pin-overlay.hidden{display:none}
+.pin-dots{display:flex;gap:12px;margin-bottom:4px}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:var(--s3);border:.5px solid var(--br2);transition:background .15s}
+.pin-dot.fill{background:var(--ac)}
+.pin-grid{display:grid;grid-template-columns:repeat(3,64px);gap:10px}
+.pin-key{height:64px;border-radius:14px;background:var(--s2);border:.5px solid var(--br2);font-size:22px;font-weight:600;color:var(--t1);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .1s;user-select:none}
+.pin-key:active{background:var(--s3)}
+.pin-key.del{font-size:16px;color:var(--t3)}
+.pin-error{font-size:13px;color:var(--err);min-height:18px;text-align:center}
 </style>
 </head>
 <body>
@@ -175,11 +190,6 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
     <div class="ph">
       <div><div class="ptitle">Classement</div><div class="psub" id="rank-sub">Chargement…</div></div>
       <div id="sync-dot" style="width:8px;height:8px;border-radius:50%;background:var(--t3)"></div>
-    </div>
-    <div class="slider-wrap">
-      <div class="slider-label">Jusqu'au : <span id="slider-date-label">–</span></div>
-      <input type="range" id="date-slider" min="0" max="100" value="100" oninput="onSlider(this.value)">
-      <div class="slider-dates"><span id="slider-min">–</span><span id="slider-max">–</span></div>
     </div>
     <div id="rank-list"></div>
     <div class="rank-chart-wrap">
@@ -222,16 +232,47 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
 
   <!-- SAISIE -->
   <div class="screen" id="s-input">
-    <div class="ph"><div><div class="ptitle">Saisie</div><div class="psub">Scores and pronos</div></div></div>
-    <div class="filter-row" id="input-filters">
-      <div class="frbtn on" onclick="setInputFilter(this,'all')">Tous</div>
-      <div class="frbtn" onclick="setInputFilter(this,'J1')">J1</div>
-      <div class="frbtn" onclick="setInputFilter(this,'J2')">J2</div>
-      <div class="frbtn" onclick="setInputFilter(this,'J3')">J3</div>
-      <div class="frbtn" onclick="setInputFilter(this,'pending')">À saisir</div>
+    <!-- PIN overlay -->
+    <div class="pin-overlay" id="pin-overlay">
+      <div style="font-size:22px;font-weight:700">🔒 Saisie</div>
+      <div style="font-size:13px;color:var(--t3);text-align:center">Entrez le code pour accéder</div>
+      <div class="pin-dots" id="pin-dots">
+        <div class="pin-dot" id="pd0"></div>
+        <div class="pin-dot" id="pd1"></div>
+        <div class="pin-dot" id="pd2"></div>
+        <div class="pin-dot" id="pd3"></div>
+      </div>
+      <div class="pin-error" id="pin-error"></div>
+      <div class="pin-grid">
+        <div class="pin-key" onclick="pinKey('1')">1</div><div class="pin-key" onclick="pinKey('2')">2</div><div class="pin-key" onclick="pinKey('3')">3</div>
+        <div class="pin-key" onclick="pinKey('4')">4</div><div class="pin-key" onclick="pinKey('5')">5</div><div class="pin-key" onclick="pinKey('6')">6</div>
+        <div class="pin-key" onclick="pinKey('7')">7</div><div class="pin-key" onclick="pinKey('8')">8</div><div class="pin-key" onclick="pinKey('9')">9</div>
+        <div class="pin-key" style="visibility:hidden"></div><div class="pin-key" onclick="pinKey('0')">0</div><div class="pin-key del" onclick="pinDel()">⌫</div>
+      </div>
     </div>
-    <div class="mlist" id="match-list"></div>
+    <!-- Contenu Saisie (masqué jusqu'au PIN) -->
+    <div id="input-content" class="hidden" style="display:none">
+      <div class="ph">
+        <div><div class="ptitle">Saisie</div><div class="psub">Scores & pronos</div></div>
+        <button onclick="lockSaisie()" style="background:none;border:none;color:var(--t3);font-size:18px;cursor:pointer">🔒</button>
+      </div>
+      <div class="filter-row" id="input-filters">
+        <div class="frbtn on" onclick="setInputFilter(this,'all')">Tous</div>
+        <div class="frbtn" onclick="setInputFilter(this,'J1')">J1</div>
+        <div class="frbtn" onclick="setInputFilter(this,'J2')">J2</div>
+        <div class="frbtn" onclick="setInputFilter(this,'J3')">J3</div>
+        <div class="frbtn" onclick="setInputFilter(this,'pending')">À saisir</div>
+      </div>
+      <div class="mlist" id="match-list"></div>
+    </div>
   </div>
+</div>
+
+<!-- Slider classement fixe -->
+<div class="slider-fixed" id="slider-fixed">
+  <div class="slider-label" style="margin-bottom:6px">Jusqu'au : <span id="slider-date-label" style="font-weight:600;color:var(--t1)">–</span></div>
+  <input type="range" id="date-slider" min="0" max="100" value="100" oninput="onSlider(this.value)">
+  <div class="slider-dates"><span id="slider-min">–</span><span id="slider-max">–</span></div>
 </div>
 
 <nav class="nav">
@@ -409,8 +450,7 @@ function initSliderDates() {
   sliderDates = doneDates;
 
   if (!doneDates.length) {
-    document.querySelector(".slider-wrap").style.display = "none";
-    document.querySelectorAll(".slider-wrap").forEach(w => w.style.display = "none");
+    document.getElementById("slider-fixed").classList.remove("on");
     return;
   }
 
@@ -500,15 +540,54 @@ function getRoundPts(pName, round) {
   return t;
 }
 
+// ── PIN Saisie ──
+const SAISIE_PIN = "2026";
+let pinBuffer = "";
+let saisieUnlocked = false;
+
+function pinKey(k) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += k;
+  updatePinDots();
+  if (pinBuffer.length === 4) {
+    if (pinBuffer === SAISIE_PIN) {
+      saisieUnlocked = true;
+      document.getElementById("pin-overlay").classList.add("hidden");
+      document.getElementById("pin-overlay").style.display = "none";
+      document.getElementById("input-content").style.display = "block";
+      renderMatchList();
+    } else {
+      document.getElementById("pin-error").textContent = "Code incorrect, réessaie.";
+      setTimeout(() => { pinBuffer = ""; updatePinDots(); document.getElementById("pin-error").textContent = ""; }, 800);
+    }
+  }
+}
+function pinDel() {
+  pinBuffer = pinBuffer.slice(0,-1);
+  updatePinDots();
+}
+function updatePinDots() {
+  for (let i=0;i<4;i++) document.getElementById("pd"+i).classList.toggle("fill", i < pinBuffer.length);
+}
+function lockSaisie() {
+  saisieUnlocked = false; pinBuffer = "";
+  document.getElementById("pin-overlay").style.display = "flex";
+  document.getElementById("pin-overlay").classList.remove("hidden");
+  document.getElementById("input-content").style.display = "none";
+  updatePinDots();
+}
+
 // ── Nav ──
 function goTo(id, btn) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.querySelectorAll(".nb").forEach(b => b.classList.remove("on"));
   document.getElementById("s-"+id).classList.add("active");
   btn.classList.add("on");
+  // Slider classement : fixe visible seulement sur l'écran Classement
+  document.getElementById("slider-fixed").classList.toggle("on", id === "rank");
   if (id==="badges") renderBadges();
   if (id==="stats") renderStats();
-  if (id==="input") renderMatchList();
+  if (id==="input") { if (saisieUnlocked) renderMatchList(); }
   if (id==="profil") renderProfil();
 }
 
@@ -726,6 +805,48 @@ function computeAllBadges() {
     return { pair: bestPair, corr: bestCorr };
   })();
 
+  // Idéfix 🐕 : celui qui mise le plus souvent sur le favori (cote la plus basse)
+  const idefix = state.players.map(p => {
+    let favBets=0, total=0;
+    allIds.forEach(id => {
+      const d=state.matchData[id]||{};
+      if (!d.cote1||!d.coteN||!d.cote2) return;
+      const pr=(d.pronos||{})[p.name]||{};
+      if (pr.home===undefined||pr.home==="") return;
+      total++;
+      const minCote=Math.min(d.cote1,d.coteN,d.cote2);
+      const favRes=minCote===d.cote1?"home":minCote===d.cote2?"away":"draw";
+      const pH=parseInt(pr.home),pA=parseInt(pr.away);
+      const pronoRes=pH>pA?"home":pH<pA?"away":"draw";
+      if (pronoRes===favRes) favBets++;
+    });
+    return {name:p.name, rate:total?Math.round(favBets/total*100):0, count:favBets, total};
+  }).sort((a,b)=>b.rate-a.rate);
+
+  // Le Club 🎪 : le trio qui pronos le même score sur le plus de matchs
+  const leClub = (() => {
+    const players=state.players;
+    let bestGroup=null, bestCount=0, bestTotal=0;
+    for (let i=0;i<players.length;i++) {
+      for (let j=i+1;j<players.length;j++) {
+        for (let k=j+1;k<players.length;k++) {
+          let same=0,total=0;
+          allIds.forEach(id=>{
+            const d=state.matchData[id]||{};
+            if(d.scoreHome===undefined) return;
+            const pr1=(d.pronos||{})[players[i].name]||{},pr2=(d.pronos||{})[players[j].name]||{},pr3=(d.pronos||{})[players[k].name]||{};
+            if(pr1.home===undefined||pr1.home===""||pr2.home===undefined||pr2.home===""||pr3.home===undefined||pr3.home==="") return;
+            total++;
+            if(parseInt(pr1.home)===parseInt(pr2.home)&&parseInt(pr1.home)===parseInt(pr3.home)&&
+               parseInt(pr1.away)===parseInt(pr2.away)&&parseInt(pr1.away)===parseInt(pr3.away)) same++;
+          });
+          if(same>bestCount){bestCount=same;bestTotal=total;bestGroup=[players[i].name,players[j].name,players[k].name];}
+        }
+      }
+    }
+    return {group:bestGroup,count:bestCount,total:bestTotal};
+  })();
+
   return [
     {icon:"🏆",label:"Podium",slides:[{type:"podium",data:pl.slice(0,3)}]},
     {icon:"⚡",label:"Bourreau J1",slides:[{type:"badge",icon:"⚡",title:"Bourreau J1",holder:bourreau[0]?.name||"–",stat:bourreau[0]?.pts||0,statl:"pts sur la journée",desc:"A tout écrasé lors de la première journée.",color:"#e65c35"}]},
@@ -738,6 +859,8 @@ function computeAllBadges() {
     {icon:"⚔️",label:"Les Rivaux",slides:[{type:"relational",icon:"⚔️",title:"Les Rivaux",pair:rivaux.pair||["–","–"],stat:rivaux.count,statl:"désaccords sur le résultat ("+rivaux.total+" matchs)",desc:"Ils ne sont jamais d'accord. L'un dit 1, l'autre dit 2.",color:"#f05252"}]},
     {icon:"👯",label:"Les Jumeaux",slides:[{type:"relational",icon:"👯",title:"Les Jumeaux",pair:jumeaux.pair||["–","–"],stat:jumeaux.same,statl:"même résultat pronostiqué sur "+jumeaux.total+" matchs",desc:"Même vision du jeu, exécution différente. Deux cerveaux, un seul logiciel.",color:"#4cc9f0"}]},
     {icon:"📡",label:"Même Longueur d'Onde",slides:[{type:"relational",icon:"📡",title:"Même Longueur d'Onde",pair:longueurDonde.pair||["–","–"],stat:longueurDonde.corr>0?Math.round(longueurDonde.corr*100)+"%":"–",statl:"corrélation des courbes de points",desc:"Leurs classements évoluent en parfaite synchronie. Quand l'un monte, l'autre monte.",color:"#9b5de5"}]},
+    {icon:"🐕",label:"Idéfix",slides:[{type:"badge",icon:"🐕",title:"Idéfix",holder:idefix[0]?.name||"–",stat:(idefix[0]?.rate||0)+"%",statl:"des pronos sur le favori ("+idefix[0]?.count+"/"+idefix[0]?.total+" matchs)",desc:"Suit ses favoris quoiqu'il arrive. Jamais de surprise, toujours la sécurité.",color:"#22c97a"}]},
+    {icon:"🎪",label:"Le Club",slides:[{type:"club",icon:"🎪",title:"Le Club",group:leClub.group||["–","–","–"],stat:leClub.count,statl:"mêmes pronos sur "+leClub.total+" matchs",desc:"Ces trois-là ont un abonnement au cerveau collectif. Un vote, trois bulletins.",color:"#fb5607"}]},
   ];
 }
 
@@ -752,6 +875,8 @@ function renderBadges() {
     const s=b.slides[0];
     const holder = s.type==="relational"
       ? (s.pair&&s.pair[0]!=="–" ? s.pair.join(" & ") : "–")
+      : s.type==="club"
+      ? (s.group&&s.group[0]!=="–" ? s.group.join(", ") : "–")
       : (s.holder||(s.data&&s.data[0]?.name)||"–");
     return '<div class="bcard" onclick="openStory('+i+')">' +
       '<div style="font-size:26px;margin-bottom:6px">'+b.icon+'</div>' +
@@ -786,6 +911,24 @@ function renderSlide() {
       '<div class="podcol"><div class="podname" style="font-weight:700">'+(p1?.name||"–")+'</div><div class="podpts" style="color:var(--gold)">'+(p1?.pts||0)+' pts</div><div class="podblk" style="width:86px;height:115px;background:var(--gold)">1</div></div>'+
       '<div class="podcol"><div class="podname">'+(p3?.name||"–")+'</div><div class="podpts">'+(p3?.pts||0)+' pts</div><div class="podblk" style="width:68px;height:65px;background:var(--bronze)">3</div></div>'+
       '</div></div>';
+  } else if (s.type==="club") {
+    const grp = s.group||["–","–","–"];
+    const avatars = grp.map(name=>{
+      const pi=state.players.findIndex(p=>p.name===name);
+      const c=pi>=0?COLORS[pi%COLORS.length]:"#888";
+      const ini=name!=="–"?name.substring(0,2).toUpperCase():"?";
+      return '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">'+
+        '<div style="width:46px;height:46px;border-radius:50%;background:'+c+'22;color:'+c+';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;border:2px solid '+c+'">'+ini+'</div>'+
+        '<div style="font-size:11px;font-weight:600;color:var(--t1);max-width:70px;text-align:center">'+name+'</div>'+
+        '</div>';
+    }).join('<div style="font-size:18px;color:var(--t3);align-self:center">·</div>');
+    html='<div class="bcrd">'+
+      '<span class="bico">'+s.icon+'</span>'+
+      '<div class="btitle">'+s.title+'</div>'+
+      '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:14px 0 10px;flex-wrap:wrap">'+avatars+'</div>'+
+      '<div class="bstat" style="color:'+s.color+'">'+s.stat+'</div>'+
+      '<div class="bstatl">'+s.statl+'</div>'+
+      '<div class="bdesc">'+s.desc+'</div></div>';
   } else if (s.type==="relational") {
     const [p1,p2] = s.pair||["–","–"];
     const pi1 = state.players.findIndex(p=>p.name===p1), pi2 = state.players.findIndex(p=>p.name===p2);
@@ -847,9 +990,11 @@ function renderStats() {
   const getScore = p => f==="all" ? getTotalUpTo(p.name,matchIds) : getRoundPts(p.name,f);
   const scored = pl.map((p,i)=>({name:p.name,pts:getScore(p),col:COLORS[i%COLORS.length]})).sort((a,b)=>b.pts-a.pts);
 
-  let html='<div class="ccrd"><div class="ctitle">Points '+(f==="all"?"cumulés":f)+'</div><canvas id="c-bar" height="200"></canvas></div>';
+  // Hauteur adaptative pour barres horizontales (15 joueurs ~20px/barre)
+  const barH = Math.max(180, scored.length * 28);
+  let html='<div class="ccrd"><div class="ctitle">Points '+(f==="all"?"cumulés":f)+'</div><canvas id="c-bar" style="width:100%;height:'+barH+'px;display:block"></canvas></div>';
   if (f==="all") html+='<div class="ccrd"><div class="ctitle">Évolution cumulée</div><canvas id="c-evo" style="width:100%;height:220px;max-height:220px;display:block"></canvas></div>';
-  html+='<div class="ccrd"><div class="ctitle">Scores exacts</div><canvas id="c-exact" height="180"></canvas></div>';
+  html+='<div class="ccrd"><div class="ctitle">Scores exacts</div><canvas id="c-exact" style="width:100%;height:'+barH+'px;display:block"></canvas></div>';
 
   // Baromètre risque (cote moyenne)
   const allIds=Object.keys(state.matchData).map(Number);
@@ -867,10 +1012,20 @@ function renderStats() {
   document.getElementById("stats-body").innerHTML=html;
 
   setTimeout(()=>{
-    // Bar chart
-    charts.push(new Chart(document.getElementById("c-bar").getContext("2d"),{
-      type:"bar",data:{labels:scored.map(p=>p.name),datasets:[{data:scored.map(p=>p.pts),backgroundColor:scored.map(p=>p.col+"aa"),borderColor:scored.map(p=>p.col),borderWidth:1.5,borderRadius:4}]},
-      options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#555",font:{size:9}},grid:{color:"rgba(255,255,255,.04)"}},y:{ticks:{color:"#555",font:{size:10}},grid:{color:"rgba(255,255,255,.06)"},beginAtZero:true}}}
+    // Bar chart horizontal (indexAxis:'y')
+    const cbarEl = document.getElementById("c-bar");
+    cbarEl.height = barH;
+    charts.push(new Chart(cbarEl.getContext("2d"),{
+      type:"bar",
+      data:{labels:scored.map(p=>p.name),datasets:[{data:scored.map(p=>p.pts),backgroundColor:scored.map(p=>p.col+"aa"),borderColor:scored.map(p=>p.col),borderWidth:1.5,borderRadius:4}]},
+      options:{
+        indexAxis:"y",responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.x+" pts"}}},
+        scales:{
+          x:{ticks:{color:"#555",font:{size:10}},grid:{color:"rgba(255,255,255,.06)"},beginAtZero:true},
+          y:{ticks:{color:"#a09e99",font:{size:11}},grid:{display:false}}
+        }
+      }
     }));
 
     // Evolution
@@ -1152,13 +1307,37 @@ function buildPlayerProfile(pName) {
   const favRate = coteCount ? Math.round(favCount/coteCount*100) : 0;
   const drawRate = drawPronos ? Math.round(drawCorrect/drawPronos*100) : 0;
 
-  // Archétype
+  // Archétype (percentile relatif dans la ligue — 4-5 profils distincts garantis)
   let archetype, arcColor;
-  if (avgCote >= 100) { archetype = "🎲 Le Flambeur"; arcColor = "#f05252"; }
-  else if (avgCote >= 70) { archetype = "⚡ L'Audacieux"; arcColor = "#f59e0b"; }
-  else if (exactRate >= 15) { archetype = "🔮 Le Devin"; arcColor = "#9b5de5"; }
-  else if (goodRate >= 60) { archetype = "📐 Le Calculateur"; arcColor = "#3d8ef0"; }
-  else { archetype = "🛡 Le Prudent"; arcColor = "#22c97a"; }
+  {
+    const leagueStats = state.players.map(p => {
+      let s=0,c=0,ex=0,gd=0;
+      allIds.forEach(id=>{
+        const d=state.matchData[id]||{},pr=(d.pronos||{})[p.name]||{};
+        if(!d||d.scoreHome===undefined||pr.home===undefined||pr.home==="")return;
+        const rH=parseInt(d.scoreHome),rA=parseInt(d.scoreAway),pH=parseInt(pr.home),pA=parseInt(pr.away);
+        if(isNaN(rH)||isNaN(pH))return;
+        const cote=rH>rA?(d.cote1||d.coteHome||50):rA>rH?(d.cote2||d.coteAway||50):(d.coteN||50);
+        s+=cote; c++;
+        if(pH===rH&&pA===rA) ex++;
+        if(Math.sign(rH-rA)===Math.sign(pH-pA)) gd++;
+      });
+      return {name:p.name, avgCote:c?Math.round(s/c):0, exactRate:c?ex/c*100:0, goodRate:c?gd/c*100:0};
+    });
+    const n = leagueStats.length || 1;
+    const sortedCote  = [...leagueStats].sort((a,b)=>b.avgCote-a.avgCote);
+    const sortedExact = [...leagueStats].sort((a,b)=>b.exactRate-a.exactRate);
+    const sortedGood  = [...leagueStats].sort((a,b)=>b.goodRate-a.goodRate);
+    const coteRank    = sortedCote.findIndex(s=>s.name===pName);
+    const exactRkPct  = sortedExact.findIndex(s=>s.name===pName);
+    const goodRkPct   = sortedGood.findIndex(s=>s.name===pName);
+    const medianCote  = sortedCote[Math.floor(n/2)]?.avgCote || 0;
+    if (coteRank < Math.ceil(n*0.2))       { archetype="🎲 Le Flambeur";      arcColor="#f05252"; }
+    else if (exactRkPct < Math.ceil(n*0.25)){ archetype="🔮 Le Devin";         arcColor="#9b5de5"; }
+    else if (goodRkPct  < Math.ceil(n*0.33)){ archetype="📐 Le Calculateur";   arcColor="#3d8ef0"; }
+    else if (avgCote >= medianCote)          { archetype="⚡ L'Audacieux";      arcColor="#f59e0b"; }
+    else                                     { archetype="🛡 Le Prudent";       arcColor="#22c97a"; }
+  }
 
   // Position dans la ligue
   const allScores = state.players.map(p => getTotalUpTo(p.name, allIds)).sort((a,b)=>b-a);
