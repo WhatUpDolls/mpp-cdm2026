@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — Ligue MPP CDM 2026</title>
+<title>Admin \u2014 Ligue MPP CDM 2026</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -129,18 +129,18 @@ select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px r
 
 <!-- Sidebar -->
 <aside class="sidebar">
-  <div class="sidebar-brand"><div class="name">MPP Admin</div><div class="sub">CDM 2026 · 15 joueurs</div></div>
+  <div class="sidebar-brand"><div class="name">MPP Admin</div><div class="sub">CDM 2026 \u00b7 15 joueurs</div></div>
   <div class="sidebar-section">
     <div class="sidebar-label">Gestion</div>
-    <div class="nav-item active" data-tab="matches" onclick="goTo(this,'matches')">📋 Matchs &amp; scores</div>
-    <div class="nav-item" data-tab="players" onclick="goTo(this,'players')">👥 Joueurs</div>
-    <div class="nav-item" data-tab="overview" onclick="goTo(this,'overview')">📊 Vue d'ensemble</div>
+    <div class="nav-item active" data-tab="matches" onclick="goTo(this,'matches')">\ud83d\udccb Matchs &amp; scores</div>
+    <div class="nav-item" data-tab="players" onclick="goTo(this,'players')">\ud83d\udc65 Joueurs</div>
+    <div class="nav-item" data-tab="overview" onclick="goTo(this,'overview')">\ud83d\udcca Vue d'ensemble</div>
   </div>
   <div class="nav-divider"></div>
   <div class="sidebar-section">
-    <div class="sidebar-label">Données</div>
-    <div class="nav-item" onclick="exportData()">⬇ Exporter JSON</div>
-    <div class="nav-item" onclick="document.getElementById('import-file').click()">⬆ Importer JSON</div>
+    <div class="sidebar-label">Donn\u00e9es</div>
+    <div class="nav-item" onclick="exportData()">\u2b07 Exporter JSON</div>
+    <div class="nav-item" onclick="document.getElementById('import-file').click()">\u2b06 Importer JSON</div>
     <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
   </div>
   <div class="sidebar-footer">
@@ -154,13 +154,13 @@ select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px r
 
   <!-- MATCHS -->
   <div id="tab-matches" class="tab-content active">
-    <div class="page-header"><h1>Matchs &amp; pronostics</h1><p>Score réel · Cotes · Bonus rareté · Pronostics des 15 joueurs</p></div>
+    <div class="page-header"><h1>Matchs &amp; pronostics</h1><p>Score r\u00e9el \u00b7 Cotes \u00b7 Bonus raret\u00e9 \u00b7 Pronostics des 15 joueurs</p></div>
     <div class="card">
       <div class="filters-row">
-        <div class="field"><div class="field-label">Journée / Phase</div>
+        <div class="field"><div class="field-label">Journ\u00e9e / Phase</div>
           <select id="f-round" onchange="renderMatches()">
             <option value="">Toutes</option>
-            <option value="J1">Journée 1</option><option value="J2">Journée 2</option><option value="J3">Journée 3</option>
+            <option value="J1">Journ\u00e9e 1</option><option value="J2">Journ\u00e9e 2</option><option value="J3">Journ\u00e9e 3</option>
             <option value="32">16es de finale</option><option value="16">8es de finale</option>
             <option value="QF">Quarts de finale</option><option value="SF">Demi-finales</option>
             <option value="3rd">Match 3e place</option><option value="F">Finale</option>
@@ -172,17 +172,17 @@ select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px r
             ${['A','B','C','D','E','F','G','H','I','J','K','L'].map(g=>`<option>Groupe ${g}</option>`).join('')}
           </select>
         </div>
-        <div class="field"><div class="field-label">Équipe</div>
+        <div class="field"><div class="field-label">\u00c9quipe</div>
           <select id="f-team" onchange="renderMatches()"><option value="">Toutes</option></select>
         </div>
         <div class="field"><div class="field-label">Statut</div>
           <select id="f-status" onchange="renderMatches()">
-            <option value="">Tous</option><option value="done">Terminés</option><option value="pending">À venir</option>
+            <option value="">Tous</option><option value="done">Termin\u00e9s</option><option value="pending">\u00c0 venir</option>
           </select>
         </div>
         <div class="field"><div class="field-label">Trier par</div>
           <select id="f-sort" onchange="renderMatches()">
-            <option value="date">Date</option><option value="round">Journée</option><option value="group">Groupe</option>
+            <option value="date">Date</option><option value="round">Journ\u00e9e</option><option value="group">Groupe</option>
           </select>
         </div>
       </div>
@@ -192,7 +192,7 @@ select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px r
 
   <!-- JOUEURS -->
   <div id="tab-players" class="tab-content">
-    <div class="page-header"><h1>Joueurs</h1><p>Gérer les participants de la ligue.</p></div>
+    <div class="page-header"><h1>Joueurs</h1><p>G\u00e9rer les participants de la ligue.</p></div>
     <div class="card">
       <div class="card-title">Ajouter un joueur</div>
       <div class="add-row">
@@ -205,7 +205,7 @@ select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px r
 
   <!-- OVERVIEW -->
   <div id="tab-overview" class="tab-content">
-    <div class="page-header"><h1>Vue d'ensemble</h1><p>Classement et évolution des points par journée.</p></div>
+    <div class="page-header"><h1>Vue d'ensemble</h1><p>Classement et \u00e9volution des points par journ\u00e9e.</p></div>
     <div class="stats-row" id="ov-stats"></div>
     <div class="card" style="margin-bottom:1rem">
       <div class="card-title">Classement provisoire</div>
@@ -213,7 +213,7 @@ select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px r
       <tbody id="ov-ranking"></tbody></table>
     </div>
     <div class="card">
-      <div class="card-title">Évolution des points par journée</div>
+      <div class="card-title">\u00c9volution des points par journ\u00e9e</div>
       <canvas id="evolution-chart" style="width:100%;height:280px;max-height:280px;display:block"></canvas>
     </div>
   </div>
@@ -223,74 +223,74 @@ select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px r
 <div class="notif" id="notif"></div>
 
 <script>
-// ─── MATCHES DATA ─────────────────────────────────────────────────────────
+// \u2500\u2500\u2500 MATCHES DATA \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 const MATCHES_RAW = [
   {id:1,group:"A",round:1,date:"2026-06-11",home:"Mexique",away:"Afrique du Sud"},
-  {id:2,group:"A",round:1,date:"2026-06-11",home:"Corée du Sud",away:"Tchéquie"},
-  {id:3,group:"A",round:2,date:"2026-06-18",home:"Tchéquie",away:"Afrique du Sud"},
-  {id:4,group:"A",round:2,date:"2026-06-18",home:"Mexique",away:"Corée du Sud"},
-  {id:5,group:"A",round:3,date:"2026-06-24",home:"Tchéquie",away:"Mexique"},
-  {id:6,group:"A",round:3,date:"2026-06-24",home:"Afrique du Sud",away:"Corée du Sud"},
+  {id:2,group:"A",round:1,date:"2026-06-11",home:"Cor\u00e9e du Sud",away:"Tch\u00e9quie"},
+  {id:3,group:"A",round:2,date:"2026-06-18",home:"Tch\u00e9quie",away:"Afrique du Sud"},
+  {id:4,group:"A",round:2,date:"2026-06-18",home:"Mexique",away:"Cor\u00e9e du Sud"},
+  {id:5,group:"A",round:3,date:"2026-06-24",home:"Tch\u00e9quie",away:"Mexique"},
+  {id:6,group:"A",round:3,date:"2026-06-24",home:"Afrique du Sud",away:"Cor\u00e9e du Sud"},
   {id:7,group:"B",round:1,date:"2026-06-12",home:"Canada",away:"Bosnie"},
   {id:8,group:"B",round:1,date:"2026-06-13",home:"Qatar",away:"Suisse"},
   {id:9,group:"B",round:2,date:"2026-06-18",home:"Suisse",away:"Bosnie"},
   {id:10,group:"B",round:2,date:"2026-06-18",home:"Canada",away:"Qatar"},
   {id:11,group:"B",round:3,date:"2026-06-24",home:"Suisse",away:"Canada"},
   {id:12,group:"B",round:3,date:"2026-06-24",home:"Qatar",away:"Bosnie"},
-  {id:13,group:"C",round:1,date:"2026-06-13",home:"Brésil",away:"Maroc"},
-  {id:14,group:"C",round:1,date:"2026-06-13",home:"Haïti",away:"Écosse"},
-  {id:15,group:"C",round:2,date:"2026-06-19",home:"Écosse",away:"Maroc"},
-  {id:16,group:"C",round:2,date:"2026-06-19",home:"Brésil",away:"Haïti"},
-  {id:17,group:"C",round:3,date:"2026-06-24",home:"Écosse",away:"Brésil"},
-  {id:18,group:"C",round:3,date:"2026-06-24",home:"Maroc",away:"Haïti"},
-  {id:19,group:"D",round:1,date:"2026-06-12",home:"États-Unis",away:"Paraguay"},
+  {id:13,group:"C",round:1,date:"2026-06-13",home:"Br\u00e9sil",away:"Maroc"},
+  {id:14,group:"C",round:1,date:"2026-06-13",home:"Ha\u00efti",away:"\u00c9cosse"},
+  {id:15,group:"C",round:2,date:"2026-06-19",home:"\u00c9cosse",away:"Maroc"},
+  {id:16,group:"C",round:2,date:"2026-06-19",home:"Br\u00e9sil",away:"Ha\u00efti"},
+  {id:17,group:"C",round:3,date:"2026-06-24",home:"\u00c9cosse",away:"Br\u00e9sil"},
+  {id:18,group:"C",round:3,date:"2026-06-24",home:"Maroc",away:"Ha\u00efti"},
+  {id:19,group:"D",round:1,date:"2026-06-12",home:"\u00c9tats-Unis",away:"Paraguay"},
   {id:20,group:"D",round:1,date:"2026-06-14",home:"Australie",away:"Turquie"},
-  {id:21,group:"D",round:2,date:"2026-06-19",home:"États-Unis",away:"Australie"},
+  {id:21,group:"D",round:2,date:"2026-06-19",home:"\u00c9tats-Unis",away:"Australie"},
   {id:22,group:"D",round:2,date:"2026-06-19",home:"Paraguay",away:"Turquie"},
-  {id:23,group:"D",round:3,date:"2026-06-25",home:"États-Unis",away:"Turquie"},
+  {id:23,group:"D",round:3,date:"2026-06-25",home:"\u00c9tats-Unis",away:"Turquie"},
   {id:24,group:"D",round:3,date:"2026-06-25",home:"Paraguay",away:"Australie"},
-  {id:25,group:"E",round:1,date:"2026-06-14",home:"Allemagne",away:"Curaçao"},
-  {id:26,group:"E",round:1,date:"2026-06-14",home:"Côte d'Ivoire",away:"Équateur"},
-  {id:27,group:"E",round:2,date:"2026-06-20",home:"Allemagne",away:"Côte d'Ivoire"},
-  {id:28,group:"E",round:2,date:"2026-06-20",home:"Équateur",away:"Curaçao"},
-  {id:29,group:"E",round:3,date:"2026-06-25",home:"Équateur",away:"Allemagne"},
-  {id:30,group:"E",round:3,date:"2026-06-25",home:"Curaçao",away:"Côte d'Ivoire"},
+  {id:25,group:"E",round:1,date:"2026-06-14",home:"Allemagne",away:"Cura\u00e7ao"},
+  {id:26,group:"E",round:1,date:"2026-06-14",home:"C\u00f4te d'Ivoire",away:"\u00c9quateur"},
+  {id:27,group:"E",round:2,date:"2026-06-20",home:"Allemagne",away:"C\u00f4te d'Ivoire"},
+  {id:28,group:"E",round:2,date:"2026-06-20",home:"\u00c9quateur",away:"Cura\u00e7ao"},
+  {id:29,group:"E",round:3,date:"2026-06-25",home:"\u00c9quateur",away:"Allemagne"},
+  {id:30,group:"E",round:3,date:"2026-06-25",home:"Cura\u00e7ao",away:"C\u00f4te d'Ivoire"},
   {id:31,group:"F",round:1,date:"2026-06-14",home:"Pays-Bas",away:"Japon"},
-  {id:32,group:"F",round:1,date:"2026-06-14",home:"Suède",away:"Tunisie"},
-  {id:33,group:"F",round:2,date:"2026-06-20",home:"Pays-Bas",away:"Suède"},
+  {id:32,group:"F",round:1,date:"2026-06-14",home:"Su\u00e8de",away:"Tunisie"},
+  {id:33,group:"F",round:2,date:"2026-06-20",home:"Pays-Bas",away:"Su\u00e8de"},
   {id:34,group:"F",round:2,date:"2026-06-21",home:"Tunisie",away:"Japon"},
   {id:35,group:"F",round:3,date:"2026-06-25",home:"Tunisie",away:"Pays-Bas"},
-  {id:36,group:"F",round:3,date:"2026-06-25",home:"Japon",away:"Suède"},
-  {id:37,group:"G",round:1,date:"2026-06-15",home:"Belgique",away:"Égypte"},
-  {id:38,group:"G",round:1,date:"2026-06-15",home:"Iran",away:"Nouvelle-Zélande"},
+  {id:36,group:"F",round:3,date:"2026-06-25",home:"Japon",away:"Su\u00e8de"},
+  {id:37,group:"G",round:1,date:"2026-06-15",home:"Belgique",away:"\u00c9gypte"},
+  {id:38,group:"G",round:1,date:"2026-06-15",home:"Iran",away:"Nouvelle-Z\u00e9lande"},
   {id:39,group:"G",round:2,date:"2026-06-21",home:"Belgique",away:"Iran"},
-  {id:40,group:"G",round:2,date:"2026-06-21",home:"Nouvelle-Zélande",away:"Égypte"},
-  {id:41,group:"G",round:3,date:"2026-06-26",home:"Nouvelle-Zélande",away:"Belgique"},
-  {id:42,group:"G",round:3,date:"2026-06-26",home:"Égypte",away:"Iran"},
+  {id:40,group:"G",round:2,date:"2026-06-21",home:"Nouvelle-Z\u00e9lande",away:"\u00c9gypte"},
+  {id:41,group:"G",round:3,date:"2026-06-26",home:"Nouvelle-Z\u00e9lande",away:"Belgique"},
+  {id:42,group:"G",round:3,date:"2026-06-26",home:"\u00c9gypte",away:"Iran"},
   {id:43,group:"H",round:1,date:"2026-06-15",home:"Espagne",away:"Cap-Vert"},
   {id:44,group:"H",round:1,date:"2026-06-15",home:"Arabie saoudite",away:"Uruguay"},
   {id:45,group:"H",round:2,date:"2026-06-21",home:"Espagne",away:"Arabie saoudite"},
   {id:46,group:"H",round:2,date:"2026-06-21",home:"Uruguay",away:"Cap-Vert"},
   {id:47,group:"H",round:3,date:"2026-06-26",home:"Uruguay",away:"Espagne"},
   {id:48,group:"H",round:3,date:"2026-06-26",home:"Cap-Vert",away:"Arabie saoudite"},
-  {id:49,group:"I",round:1,date:"2026-06-16",home:"France",away:"Sénégal"},
-  {id:50,group:"I",round:1,date:"2026-06-16",home:"Irak",away:"Norvège"},
+  {id:49,group:"I",round:1,date:"2026-06-16",home:"France",away:"S\u00e9n\u00e9gal"},
+  {id:50,group:"I",round:1,date:"2026-06-16",home:"Irak",away:"Norv\u00e8ge"},
   {id:51,group:"I",round:2,date:"2026-06-22",home:"France",away:"Irak"},
-  {id:52,group:"I",round:2,date:"2026-06-22",home:"Norvège",away:"Sénégal"},
-  {id:53,group:"I",round:3,date:"2026-06-26",home:"Norvège",away:"France"},
-  {id:54,group:"I",round:3,date:"2026-06-26",home:"Sénégal",away:"Irak"},
-  {id:55,group:"J",round:1,date:"2026-06-16",home:"Argentine",away:"Algérie"},
+  {id:52,group:"I",round:2,date:"2026-06-22",home:"Norv\u00e8ge",away:"S\u00e9n\u00e9gal"},
+  {id:53,group:"I",round:3,date:"2026-06-26",home:"Norv\u00e8ge",away:"France"},
+  {id:54,group:"I",round:3,date:"2026-06-26",home:"S\u00e9n\u00e9gal",away:"Irak"},
+  {id:55,group:"J",round:1,date:"2026-06-16",home:"Argentine",away:"Alg\u00e9rie"},
   {id:56,group:"J",round:1,date:"2026-06-17",home:"Autriche",away:"Jordanie"},
   {id:57,group:"J",round:2,date:"2026-06-22",home:"Argentine",away:"Autriche"},
-  {id:58,group:"J",round:2,date:"2026-06-22",home:"Jordanie",away:"Algérie"},
+  {id:58,group:"J",round:2,date:"2026-06-22",home:"Jordanie",away:"Alg\u00e9rie"},
   {id:59,group:"J",round:3,date:"2026-06-27",home:"Jordanie",away:"Argentine"},
-  {id:60,group:"J",round:3,date:"2026-06-27",home:"Algérie",away:"Autriche"},
+  {id:60,group:"J",round:3,date:"2026-06-27",home:"Alg\u00e9rie",away:"Autriche"},
   {id:61,group:"K",round:1,date:"2026-06-17",home:"Portugal",away:"RD Congo"},
-  {id:62,group:"K",round:1,date:"2026-06-17",home:"Ouzbékistan",away:"Colombie"},
-  {id:63,group:"K",round:2,date:"2026-06-23",home:"Portugal",away:"Ouzbékistan"},
+  {id:62,group:"K",round:1,date:"2026-06-17",home:"Ouzb\u00e9kistan",away:"Colombie"},
+  {id:63,group:"K",round:2,date:"2026-06-23",home:"Portugal",away:"Ouzb\u00e9kistan"},
   {id:64,group:"K",round:2,date:"2026-06-23",home:"Colombie",away:"RD Congo"},
   {id:65,group:"K",round:3,date:"2026-06-27",home:"Colombie",away:"Portugal"},
-  {id:66,group:"K",round:3,date:"2026-06-27",home:"Ouzbékistan",away:"RD Congo"},
+  {id:66,group:"K",round:3,date:"2026-06-27",home:"Ouzb\u00e9kistan",away:"RD Congo"},
   {id:67,group:"L",round:1,date:"2026-06-17",home:"Angleterre",away:"Croatie"},
   {id:68,group:"L",round:1,date:"2026-06-17",home:"Ghana",away:"Panama"},
   {id:69,group:"L",round:2,date:"2026-06-23",home:"Angleterre",away:"Ghana"},
@@ -304,20 +304,20 @@ const MATCHES_RAW = [
   })
 ];
 
-const ALL_TEAMS = ["Afrique du Sud","Algérie","Allemagne","Angleterre","Argentine","Arabie saoudite","Australie","Autriche","Belgique","Bosnie","Brésil","Canada","Cap-Vert","Colombie","Corée du Sud","Croatie","Côte d'Ivoire","Curaçao","Égypte","Équateur","Espagne","États-Unis","Écosse","France","Ghana","Haïti","Iran","Irak","Japon","Jordanie","Mexique","Maroc","Norvège","Nouvelle-Zélande","Ouzbékistan","Panama","Paraguay","Pays-Bas","Portugal","Qatar","RD Congo","Sénégal","Suède","Suisse","Tchéquie","Tunisie","Turquie","Uruguay"];
+const ALL_TEAMS = ["Afrique du Sud","Alg\u00e9rie","Allemagne","Angleterre","Argentine","Arabie saoudite","Australie","Autriche","Belgique","Bosnie","Br\u00e9sil","Canada","Cap-Vert","Colombie","Cor\u00e9e du Sud","Croatie","C\u00f4te d'Ivoire","Cura\u00e7ao","\u00c9gypte","\u00c9quateur","Espagne","\u00c9tats-Unis","\u00c9cosse","France","Ghana","Ha\u00efti","Iran","Irak","Japon","Jordanie","Mexique","Maroc","Norv\u00e8ge","Nouvelle-Z\u00e9lande","Ouzb\u00e9kistan","Panama","Paraguay","Pays-Bas","Portugal","Qatar","RD Congo","S\u00e9n\u00e9gal","Su\u00e8de","Suisse","Tch\u00e9quie","Tunisie","Turquie","Uruguay"];
 
 const KNOWN_SCORES = {1:[2,0],2:[2,1],3:[1,1],4:[1,0],7:[1,1],8:[1,1],9:[4,1],10:[6,0],13:[1,1],14:[0,1],15:[0,1],16:[3,0],19:[4,1],20:[2,0],21:[2,0],22:[0,1],25:[7,1],26:[1,0],31:[2,2],32:[5,1],37:[1,1],38:[2,2],43:[0,0],44:[1,1],49:[3,1],50:[1,4],55:[3,0],56:[3,1],61:[1,1],62:[1,3],67:[4,2],68:[1,0]};
 
 const BONUS_PTS = {commun:20, rare:30, 'tres-rare':50, 'mega-rare':70, 'ultra-rare':100};
-const BONUS_LABELS = {commun:'Commun +20', rare:'Rare +30', 'tres-rare':'Très rare +50', 'mega-rare':'Méga rare +70', 'ultra-rare':'Ultra rare +100'};
+const BONUS_LABELS = {commun:'Commun +20', rare:'Rare +30', 'tres-rare':'Tr\u00e8s rare +50', 'mega-rare':'M\u00e9ga rare +70', 'ultra-rare':'Ultra rare +100'};
 const BONUS_KEYS = ['commun','rare','tres-rare','mega-rare','ultra-rare'];
 
 const PHASE_LABELS = {"32":"16es","16":"8es","QF":"Quarts","SF":"Demies","3rd":"3e place","F":"Finale"};
 
-// ─── CHART COLORS ─────────────────────────────────────────────────────────
+// \u2500\u2500\u2500 CHART COLORS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 const PLAYER_COLORS = ["#2a78d6","#e65c35","#1baf7a","#eda100","#9b5de5","#f72585","#4cc9f0","#3a86ff","#fb5607","#8ac926","#ff006e","#ffbe0b","#6a4c93","#1982c4","#8338ec"];
 
-// ─── SUPABASE ─────────────────────────────────────────────────────────────
+// \u2500\u2500\u2500 SUPABASE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 const SB_URL = "https://owoycuewdxqdgvufmsdq.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93b3ljdWV3ZHhxZGd2dWZtc2RxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1OTMwNzUsImV4cCI6MjA5ODE2OTA3NX0.Q_M060upzhIkpvyNOg9dMVO3pPtOswXaK1kwu8bSvGE";
 
@@ -338,7 +338,7 @@ async function sbSet(key, value) {
   });
 }
 
-// ─── STATE ────────────────────────────────────────────────────────────────
+// \u2500\u2500\u2500 STATE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 let state = { players:[], matchData:{} };
 
 async function loadState() {
@@ -348,7 +348,7 @@ async function loadState() {
     if (remote && remote.players && remote.players.length > 0) {
       state = remote;
       localStorage.setItem('mpp_admin_2026', JSON.stringify(state));
-      document.getElementById('save-status').textContent = '☁ Supabase connecté';
+      document.getElementById('save-status').textContent = '\u2601 Supabase connect\u00e9';
     } else {
       const s = localStorage.getItem('mpp_admin_2026');
       if (s) state = JSON.parse(s);
@@ -356,7 +356,7 @@ async function loadState() {
   } catch(e) {
     const s = localStorage.getItem('mpp_admin_2026');
     if (s) state = JSON.parse(s);
-    document.getElementById('save-status').textContent = '⚠ Hors ligne (localStorage)';
+    document.getElementById('save-status').textContent = '\u26a0 Hors ligne (localStorage)';
   }
   if (!state.players || state.players.length===0) {
     state.players = [
@@ -364,7 +364,7 @@ async function loadState() {
       {name:"ElGoffix",        winner:"Maroc",    coteWinner:400, coteScorer:150, scorer:"", x2match:null},
       {name:"Yza_Mh",          winner:"France",   coteWinner:90,  coteScorer:80,  scorer:"", x2match:null},
       {name:"Wazaaaaaa",       winner:"France",   coteWinner:90,  coteScorer:150, scorer:"", x2match:null},
-      {name:"Tony_FLR",        winner:"Norvège",  coteWinner:230, coteScorer:80,  scorer:"", x2match:null},
+      {name:"Tony_FLR",        winner:"Norv\u00e8ge",  coteWinner:230, coteScorer:80,  scorer:"", x2match:null},
       {name:"EdsonAndreSitoe", winner:"France",   coteWinner:90,  coteScorer:150, scorer:"", x2match:null},
       {name:"MissMonique",     winner:"France",   coteWinner:90,  coteScorer:100, scorer:"", x2match:null},
       {name:"Guiiii26",        winner:"Portugal", coteWinner:110, coteScorer:100, scorer:"", x2match:null},
@@ -387,16 +387,16 @@ async function loadState() {
 
 async function saveState() {
   localStorage.setItem('mpp_admin_2026', JSON.stringify(state));
-  document.getElementById('last-saved').textContent = 'Sauvegardé ' + new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('last-saved').textContent = 'Sauvegard\u00e9 ' + new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
   try {
     await sbSet('league_state', state);
-    document.getElementById('save-status').textContent = '☁ Supabase connecté';
+    document.getElementById('save-status').textContent = '\u2601 Supabase connect\u00e9';
   } catch(e) {
-    document.getElementById('save-status').textContent = '⚠ Local seulement';
+    document.getElementById('save-status').textContent = '\u26a0 Local seulement';
   }
 }
 
-// ─── NAV ─────────────────────────────────────────────────────────────────
+// \u2500\u2500\u2500 NAV \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function goTo(el, tab) {
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
@@ -406,7 +406,7 @@ function goTo(el, tab) {
   if (tab==='overview') renderOverview();
 }
 
-// ─── MATCHES ─────────────────────────────────────────────────────────────
+// \u2500\u2500\u2500 MATCHES \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function getGroupRound(m) {
   if (!m.group) return null;
   return 'J'+m.round;
@@ -450,20 +450,20 @@ function renderMatches() {
   list.innerHTML = ms.map(m=>{
     const d = state.matchData[m.id]||{};
     const isDone = d.scoreHome!==undefined && d.scoreHome!=='';
-    const roundLabel = m.group ? `Gr.${m.group} · J${m.round}` : (PHASE_LABELS[m.phase]||m.phase);
+    const roundLabel = m.group ? `Gr.${m.group} \u00b7 J${m.round}` : (PHASE_LABELS[m.phase]||m.phase);
     const dateStr = new Date(m.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
-    const scoreStr = isDone ? `${d.scoreHome}–${d.scoreAway}` : '–';
+    const scoreStr = isDone ? `${d.scoreHome}\u2013${d.scoreAway}` : '\u2013';
     const pronoFilled = state.players.filter(p=>{const pr=(d.pronos||{})[p.name];return pr&&pr.home!==''&&pr.home!==undefined;}).length;
     return `<div class="match-item">
       <div class="match-header" id="mh-${m.id}" onclick="toggleMatch(${m.id})">
         <span class="match-id" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;font-size:11px;font-weight:700;background:${m.group?'var(--accent-bg)':'#f1eef8'};color:${m.group?'var(--accent)':'#6b3fa0'}">${m.group||PHASE_LABELS[m.phase]||'?'}</span>
         <div>
-          <div class="match-teams">${m.home} <span style="color:var(--text3);font-weight:400">vs</span> ${m.away}</div>
-          <div class="match-meta">${dateStr} · ${roundLabel}</div>
+          <div class="match-teams" id="mt-${m.id}">${d.homeTeam||m.home} <span style="color:var(--text3);font-weight:400">vs</span> ${d.awayTeam||m.away}</div>
+          <div class="match-meta">${dateStr} \u00b7 ${roundLabel}</div>
         </div>
-        ${isDone?`<span class="badge badge-done">${scoreStr}</span>`:`<span class="badge badge-pending">À jouer</span>`}
+        ${isDone?`<span class="badge badge-done">${scoreStr}</span>`:`<span class="badge badge-pending">\u00c0 jouer</span>`}
         <span style="font-size:11px;color:var(--text3);text-align:right" id="cnt-${m.id}">${pronoFilled}/${state.players.length}</span>
-        <span class="chevron">▼</span>
+        <span class="chevron">\u25bc</span>
       </div>
       <div class="match-detail" id="md-${m.id}">${renderDetail(m,d)}</div>
     </div>`;
@@ -479,21 +479,38 @@ function renderDetail(m, d) {
     return `<tr>
       <td style="font-weight:500;min-width:80px">${p.name}</td>
       <td><div class="prono-input">
-        <input type="number" min="0" max="20" value="${pr.home!==undefined&&pr.home!==''?pr.home:''}" placeholder="–" id="pr-${m.id}-${p.name}-h">
-        <span class="score-sep">–</span>
-        <input type="number" min="0" max="20" value="${pr.away!==undefined&&pr.away!==''?pr.away:''}" placeholder="–" id="pr-${m.id}-${p.name}-a">
+        <input type="number" min="0" max="20" value="${pr.home!==undefined&&pr.home!==''?pr.home:''}" placeholder="\u2013" id="pr-${m.id}-${p.name}-h">
+        <span class="score-sep">\u2013</span>
+        <input type="number" min="0" max="20" value="${pr.away!==undefined&&pr.away!==''?pr.away:''}" placeholder="\u2013" id="pr-${m.id}-${p.name}-a">
       </div></td>
       <td style="text-align:center"><input type="checkbox" class="x2-cb" ${pr.x2?'checked':''} data-pid="${p.name}"></td>
       <td class="pts-cell ${pts>0?'pts-pos':'pts-zero'}" id="pts-${m.id}-${p.name}">${pts>0?'+'+pts+' pts':'0 pt'}</td>
     </tr>`;
   }).join('');
 
+  const teamInputs = !m.group ? `
+    <div style="grid-column:1/-1">
+      <div class="field-label">\u00c9quipes</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap">
+        <div style="flex:1;min-width:100px">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:2px">Domicile</div>
+          <input type="text" value="${d.homeTeam||''}" placeholder="TBD" id="tn-${m.id}-h" style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text1);font-size:13px">
+        </div>
+        <span style="color:var(--text3);font-size:18px;font-weight:300;line-height:1">\u2013</span>
+        <div style="flex:1;min-width:100px">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:2px">Ext\u00e9rieur</div>
+          <input type="text" value="${d.awayTeam||''}" placeholder="TBD" id="tn-${m.id}-a" style="width:100%;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text1);font-size:13px">
+        </div>
+      </div>
+    </div>` : '';
+
   return `<div class="detail-sections">
+    ${teamInputs}
     <div>
-      <div class="field-label">Score réel</div>
+      <div class="field-label">Score r\u00e9el</div>
       <div class="score-row" style="margin-top:4px">
         <input type="number" min="0" max="20" value="${d.scoreHome!==undefined&&d.scoreHome!==''?d.scoreHome:''}" placeholder="D" id="sc-${m.id}-h" oninput="saveScore(${m.id})" style="width:52px!important">
-        <span class="score-sep">–</span>
+        <span class="score-sep">\u2013</span>
         <input type="number" min="0" max="20" value="${d.scoreAway!==undefined&&d.scoreAway!==''?d.scoreAway:''}" placeholder="E" id="sc-${m.id}-a" oninput="saveScore(${m.id})" style="width:52px!important">
       </div>
     </div>
@@ -502,33 +519,33 @@ function renderDetail(m, d) {
       <div style="display:flex;align-items:center;gap:5px;margin-top:4px">
         <div style="text-align:center">
           <div style="font-size:10px;color:var(--text3);margin-bottom:2px">1</div>
-          <input type="number" min="1" value="${d.cote1||''}" placeholder="–" id="ct-${m.id}-1" style="width:56px!important;height:32px">
+          <input type="number" min="1" value="${d.cote1||''}" placeholder="\u2013" id="ct-${m.id}-1" style="width:56px!important;height:32px">
         </div>
         <span class="score-sep">/</span>
         <div style="text-align:center">
           <div style="font-size:10px;color:var(--text3);margin-bottom:2px">N</div>
-          <input type="number" min="1" value="${d.coteN||''}" placeholder="–" id="ct-${m.id}-N" style="width:56px!important;height:32px">
+          <input type="number" min="1" value="${d.coteN||''}" placeholder="\u2013" id="ct-${m.id}-N" style="width:56px!important;height:32px">
         </div>
         <span class="score-sep">/</span>
         <div style="text-align:center">
           <div style="font-size:10px;color:var(--text3);margin-bottom:2px">2</div>
-          <input type="number" min="1" value="${d.cote2||''}" placeholder="–" id="ct-${m.id}-2" style="width:56px!important;height:32px">
+          <input type="number" min="1" value="${d.cote2||''}" placeholder="\u2013" id="ct-${m.id}-2" style="width:56px!important;height:32px">
         </div>
       </div>
     </div>
     <div>
-      <div class="field-label">Bonus score exact (rareté)</div>
+      <div class="field-label">Bonus score exact (raret\u00e9)</div>
       <div class="bonus-group" style="margin-top:4px">${bonusBtns}</div>
     </div>
   </div>
   <div class="field-label" style="margin-bottom:6px">Pronostics</div>
   <table class="prono-table">
-    <thead><tr><th>Joueur</th><th>Score</th><th style="text-align:center">×2</th><th style="text-align:right">Pts calculés</th></tr></thead>
+    <thead><tr><th>Joueur</th><th>Score</th><th style="text-align:center">\u00d72</th><th style="text-align:right">Pts calcul\u00e9s</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
   <div style="margin-top:12px;display:flex;align-items:center;gap:10px;padding-top:10px;border-top:0.5px solid var(--border)">
-    <button class="btn btn-primary" onclick="saveMatch(${m.id})">💾 Sauvegarder le match</button>
-    <span id="save-msg-${m.id}" style="font-size:12px;color:var(--success);display:none">✓ Sauvegardé</span>
+    <button class="btn btn-primary" onclick="saveMatch(${m.id})">\ud83d\udcbe Sauvegarder le match</button>
+    <span id="save-msg-${m.id}" style="font-size:12px;color:var(--success);display:none">\u2713 Sauvegard\u00e9</span>
   </div>`;
 }
 
@@ -554,7 +571,7 @@ function setBonus(id, key) {
   saveState();
   const m=MATCHES_RAW.find(x=>x.id===id);
   document.getElementById('md-'+id).innerHTML=renderDetail(m, state.matchData[id]);
-  notify('Bonus enregistré');
+  notify('Bonus enregistr\u00e9');
 }
 
 function saveProno(matchId, playerName) {
@@ -565,11 +582,17 @@ function saveMatch(id) {
   if (!state.matchData[id]) state.matchData[id]={};
   const d = state.matchData[id];
 
-  // Score réel
+  // Score r\u00e9el
   const scH = document.getElementById('sc-'+id+'-h');
   const scA = document.getElementById('sc-'+id+'-a');
   if (scH) d.scoreHome = scH.value===''?undefined:parseInt(scH.value);
   if (scA) d.scoreAway = scA.value===''?undefined:parseInt(scA.value);
+
+  // Noms d'équipes (phase finale uniquement)
+  const tnH = document.getElementById('tn-'+id+'-h');
+  const tnA = document.getElementById('tn-'+id+'-a');
+  if (tnH && tnH.value.trim()) d.homeTeam = tnH.value.trim();
+  if (tnA && tnA.value.trim()) d.awayTeam = tnA.value.trim();
 
   // Cotes 1/N/2
   const ct1 = document.getElementById('ct-'+id+'-1');
@@ -605,18 +628,23 @@ function saveMatch(id) {
   }).length;
   const cntEl = document.getElementById('cnt-'+id);
   if (cntEl) cntEl.textContent = pronoFilled+'/'+state.players.length;
-  // Update score badge
+  // Update score badge + team names
   const hdr = document.getElementById('mh-'+id);
   if (hdr) {
     const isDone = d.scoreHome!==undefined && d.scoreHome!=='';
     const badgeEl = hdr.querySelector('.badge');
-    if (badgeEl && isDone) { badgeEl.textContent = d.scoreHome+'–'+d.scoreAway; badgeEl.className='badge badge-done'; }
+    if (badgeEl && isDone) { badgeEl.textContent = d.scoreHome+'\u2013'+d.scoreAway; badgeEl.className='badge badge-done'; }
+    const teamsEl = document.getElementById('mt-'+id);
+    if (teamsEl && (d.homeTeam || d.awayTeam)) {
+      const m = MATCHES_RAW.find(x=>x.id===id);
+      teamsEl.innerHTML = (d.homeTeam||m?.home||'TBD') + ' <span style="color:var(--text3);font-weight:400">vs</span> ' + (d.awayTeam||m?.away||'TBD');
+    }
   }
 
   // Show save confirmation
   const msg = document.getElementById('save-msg-'+id);
   if (msg) { msg.style.display='inline'; setTimeout(()=>msg.style.display='none',2000); }
-  notify('Match #'+id+' sauvegardé');
+  notify('Match #'+id+' sauvegard\u00e9');
 }
 
 function refreshPts(matchId) {
@@ -644,14 +672,14 @@ function computePts(matchId, playerName, d, pr) {
   return pts;
 }
 
-// ─── PLAYERS ──────────────────────────────────────────────────────────────
+// \u2500\u2500\u2500 PLAYERS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function addPlayer() {
   const input=document.getElementById('new-player-name');
   const name=input.value.trim();
   if (!name) return;
-  if (state.players.find(p=>p.name===name)){notify('Déjà existant');return;}
+  if (state.players.find(p=>p.name===name)){notify('D\u00e9j\u00e0 existant');return;}
   state.players.push({name,winner:'',scorer:'',x2match:null});
-  input.value=''; saveState(); renderPlayers(); notify(name+' ajouté');
+  input.value=''; saveState(); renderPlayers(); notify(name+' ajout\u00e9');
 }
 
 function renderPlayers() {
@@ -663,21 +691,21 @@ function renderPlayers() {
       <div class="player-name-row">
         <span class="avatar" style="${isMe?'background:var(--accent);color:white;':''}">${ini}</span>
         <span style="font-weight:500;font-size:13px">${p.name}${isMe?' <span style="font-size:10px;color:var(--accent);font-weight:400">(moi)</span>':''}</span>
-        ${!isMe?`<button class="btn btn-sm" style="margin-left:auto;color:var(--text3)" onclick="removePlayer('${p.name}')">×</button>`:''}
+        ${!isMe?`<button class="btn btn-sm" style="margin-left:auto;color:var(--text3)" onclick="removePlayer('${p.name}')">\u00d7</button>`:''}
       </div>
       <div class="player-fields">
         <div>
           <div class="field-label">Vainqueur CDM</div>
           <select onchange="updatePlayer('${p.name}','winner',this.value)">
-            <option value="">–</option>
+            <option value="">\u2013</option>
             ${ALL_TEAMS.map(t=>`<option ${p.winner===t?'selected':''}>${t}</option>`).join('')}
           </select>
-          <div style="margin-top:3px;font-size:11px;color:var(--text3)">Cote : <input type="number" value="${p.coteWinner||''}" placeholder="–" style="width:50px;height:22px;font-size:11px;display:inline-block" oninput="updatePlayer('${p.name}','coteWinner',+this.value)"> pts</div>
+          <div style="margin-top:3px;font-size:11px;color:var(--text3)">Cote : <input type="number" value="${p.coteWinner||''}" placeholder="\u2013" style="width:50px;height:22px;font-size:11px;display:inline-block" oninput="updatePlayer('${p.name}','coteWinner',+this.value)"> pts</div>
         </div>
         <div>
           <div class="field-label">Meilleur buteur</div>
           <input type="text" value="${p.scorer||''}" placeholder="Nom" oninput="updatePlayer('${p.name}','scorer',this.value)">
-          <div style="margin-top:3px;font-size:11px;color:var(--text3)">Cote : <input type="number" value="${p.coteScorer||''}" placeholder="–" style="width:50px;height:22px;font-size:11px;display:inline-block" oninput="updatePlayer('${p.name}','coteScorer',+this.value)"> pts</div>
+          <div style="margin-top:3px;font-size:11px;color:var(--text3)">Cote : <input type="number" value="${p.coteScorer||''}" placeholder="\u2013" style="width:50px;height:22px;font-size:11px;display:inline-block" oninput="updatePlayer('${p.name}','coteScorer',+this.value)"> pts</div>
         </div>
       </div>
     </div>`;
@@ -693,10 +721,10 @@ function removePlayer(name) {
   if (!confirm(`Supprimer ${name} ?`)) return;
   state.players=state.players.filter(p=>p.name!==name);
   Object.values(state.matchData).forEach(d=>{if(d.pronos)delete d.pronos[name];});
-  saveState(); renderPlayers(); notify(name+' supprimé');
+  saveState(); renderPlayers(); notify(name+' supprim\u00e9');
 }
 
-// ─── OVERVIEW ─────────────────────────────────────────────────────────────
+// \u2500\u2500\u2500 OVERVIEW \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 let evoChart = null;
 
 function getPlayerRoundPts(playerName) {
@@ -806,12 +834,12 @@ function renderOverview() {
   });
 }
 
-// ─── EXPORT / IMPORT ──────────────────────────────────────────────────────
+// \u2500\u2500\u2500 EXPORT / IMPORT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function exportData() {
   const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download=`mpp_ligue_${new Date().toISOString().slice(0,10)}.json`;a.click();
-  notify('Export téléchargé');
+  notify('Export t\u00e9l\u00e9charg\u00e9');
 }
 
 function handleImport(e) {
@@ -820,22 +848,22 @@ function handleImport(e) {
   reader.onload=ev=>{
     try {
       const imp=JSON.parse(ev.target.result);
-      if(imp.players&&imp.matchData){state=imp;saveState();renderMatches();notify('Import réussi — '+state.players.length+' joueurs');}
+      if(imp.players&&imp.matchData){state=imp;saveState();renderMatches();notify('Import r\u00e9ussi \u2014 '+state.players.length+' joueurs');}
       else notify('Format invalide');
     } catch(err){notify('Erreur de lecture');}
   };
   reader.readAsText(file);
 }
 
-// ─── NOTIFY ───────────────────────────────────────────────────────────────
+// \u2500\u2500\u2500 NOTIFY \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function notify(msg) {
   const el=document.getElementById('notif');el.textContent=msg;el.classList.add('show');
   clearTimeout(window._nt);window._nt=setTimeout(()=>el.classList.remove('show'),2000);
 }
 
-// ─── INIT ─────────────────────────────────────────────────────────────────
+// \u2500\u2500\u2500 INIT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 (async () => {
-  document.getElementById('save-status').textContent = '↻ Connexion Supabase…';
+  document.getElementById('save-status').textContent = '\u21bb Connexion Supabase\u2026';
   await loadState();
   renderMatches();
 })();

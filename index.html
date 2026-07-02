@@ -271,6 +271,7 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
         <div class="frbtn" onclick="setInputFilter(this,'J1')">J1</div>
         <div class="frbtn" onclick="setInputFilter(this,'J2')">J2</div>
         <div class="frbtn" onclick="setInputFilter(this,'J3')">J3</div>
+        <div class="frbtn" onclick="setInputFilter(this,'finale')">Phase finale</div>
         <div class="frbtn" onclick="setInputFilter(this,'pending')">À saisir</div>
       </div>
       <div class="mlist" id="match-list"></div>
@@ -393,6 +394,14 @@ const MATCHES = [
   {id:72,group:"L",round:3,date:"2026-06-27",home:"Croatie",away:"Ghana"},
 ];
 
+const KNOCKOUT_MATCHES = [...Array(32)].map((_,i)=>{
+  const phases=["32","32","32","32","32","32","32","32","32","32","32","32","32","32","32","32","16","16","16","16","16","16","16","16","QF","QF","QF","QF","SF","SF","3rd","F"];
+  const dates=["2026-06-28","2026-06-29","2026-06-29","2026-06-29","2026-06-30","2026-06-30","2026-06-30","2026-07-01","2026-07-01","2026-07-01","2026-07-02","2026-07-02","2026-07-02","2026-07-03","2026-07-03","2026-07-03","2026-07-04","2026-07-04","2026-07-05","2026-07-05","2026-07-06","2026-07-06","2026-07-07","2026-07-07","2026-07-09","2026-07-10","2026-07-11","2026-07-11","2026-07-14","2026-07-15","2026-07-18","2026-07-19"];
+  return {id:73+i,phase:phases[i],date:dates[i]};
+});
+const PHASE_LABELS = {"32":"1/32","16":"1/16","QF":"Quart","SF":"Demi","3rd":"3e pl.","F":"Finale"};
+const ALL_MATCHES = [...MATCHES, ...KNOCKOUT_MATCHES];
+
 let state = {players:[], matchData:{}};
 let sliderDates = [];
 let sliderIdx = 0;
@@ -455,7 +464,7 @@ function initSliderDates() {
     return d && d.scoreHome !== undefined && d.scoreHome !== "";
   });
   const doneDates = [...new Set(
-    doneIds.map(id => {const m = MATCHES.find(x => x.id == id); return m ? m.date : null;}).filter(Boolean)
+    doneIds.map(id => {const m = ALL_MATCHES.find(x => x.id == id); return m ? m.date : null;}).filter(Boolean)
   )].sort();
   sliderDates = doneDates;
 
@@ -484,7 +493,7 @@ function initSliderDates() {
 function getMatchIdsUpTo(dateIdx) {
   if (!sliderDates.length) return Object.keys(state.matchData).map(Number);
   const cutoff = sliderDates[dateIdx];
-  return MATCHES.filter(m => m.date <= cutoff).map(m => m.id);
+  return ALL_MATCHES.filter(m => m.date <= cutoff).map(m => m.id);
 }
 
 function onSlider(val) {
@@ -812,7 +821,7 @@ function computeAllBadges() {
   // La Même Longueur d'Onde : la paire dont l'évolution des points est la plus corrélée
   const longueurDonde = (() => {
     const orderedIds = allIds.slice().sort((a,b) => {
-      const ma = MATCHES.find(x=>x.id===a), mb = MATCHES.find(x=>x.id===b);
+      const ma = ALL_MATCHES.find(x=>x.id===a), mb = ALL_MATCHES.find(x=>x.id===b);
       return (ma?.date||"").localeCompare(mb?.date||"");
     });
     let bestPair = null, bestCorr = -2;
@@ -942,6 +951,35 @@ function computeAllBadges() {
   const sniperX2=[...x2stats].sort((a,b)=>b.rate-a.rate||b.exacts-a.exacts);
   const doubleOr=[...x2stats].sort((a,b)=>b.pts-a.pts);
 
+  // Rareté bonus : points de bonus de rareté accumulés sur scores exacts
+  const rareteBonus = state.players.map(p => {
+    let bonusPts = 0;
+    allIds.forEach(id => {
+      const d=state.matchData[id]||{}, pr=(d.pronos||{})[p.name]||{};
+      if (!d.bonusType||d.scoreHome===undefined||pr.home===undefined||pr.home==="") return;
+      const rH=parseInt(d.scoreHome),rA=parseInt(d.scoreAway),pH=parseInt(pr.home),pA=parseInt(pr.away);
+      if (isNaN(rH)||isNaN(pH)) return;
+      if (pH===rH && pA===rA) bonusPts += (BONUS_PTS[d.bonusType]||0);
+    });
+    return {name:p.name, bonusPts};
+  }).sort((a,b) => b.bonusPts - a.bonusPts);
+  const rareteMinArr = rareteBonus.filter(p => p.bonusPts > 0).sort((a,b) => a.bonusPts - b.bonusPts);
+
+  // Chirurgien : ratio exacts/bons pronos (min 5 bons)
+  const chirurgien = state.players.map(p => {
+    let ex=0, gd=0;
+    allIds.forEach(id => {
+      const d=state.matchData[id]||{}, pr=(d.pronos||{})[p.name]||{};
+      if (!d||d.scoreHome===undefined||pr.home===undefined||pr.home==="") return;
+      const rH=parseInt(d.scoreHome),rA=parseInt(d.scoreAway),pH=parseInt(pr.home),pA=parseInt(pr.away);
+      if (isNaN(rH)||isNaN(pH)) return;
+      if (Math.sign(rH-rA)===Math.sign(pH-pA)) gd++;
+      if (pH===rH && pA===rA) ex++;
+    });
+    const rate = gd >= 5 ? Math.round(ex/gd*100) : 0;
+    return {name:p.name, exacts:ex, goods:gd, rate};
+  }).sort((a,b) => b.rate-a.rate || b.exacts-a.exacts);
+
   // Helpers podium
   const pCol=name=>{const i=state.players.findIndex(p=>p.name===name);return i>=0?COLORS[i%COLORS.length]:"#888";};
   const top=(arr,fmt,n=5)=>arr.slice(0,n).map(p=>({name:p.name,stat:fmt(p),col:pCol(p.name)}));
@@ -1001,6 +1039,18 @@ function computeAllBadges() {
     {icon:"💥",label:"Double Or",slides:[
       {type:"badge",icon:"💥",title:"Double Or",holder:doubleOr[0]?.used?doubleOr[0]?.name||"–":"–",stat:doubleOr[0]?.used?doubleOr[0]?.pts||0:"–",statl:"pts engrangés sur ses paris ×2",desc:"A transformé ses doublements en mines d'or. Le ×2 comme art de vivre.",color:"#f5c842"},
       pod("Classement · Double Or",doubleOr.filter(p=>p.used>0),p=>p.pts+" pts ×2","#f5c842")
+    ]},
+    {icon:"💎",label:"La Mine d'Or",slides:[
+      {type:"badge",icon:"💎",title:"La Mine d'Or",holder:rareteBonus[0]?.bonusPts>0?rareteBonus[0].name:"–",stat:rareteBonus[0]?.bonusPts||0,statl:"pts de bonus de rareté récoltés sur scores exacts",desc:"A tiré le maximum des bonus de rareté sur ses scores exacts. L'or se cache dans les détails.",color:"#f5c842"},
+      pod("Classement · Bonus Rareté",rareteBonus.filter(p=>p.bonusPts>0),p=>p.bonusPts+" pts rareté","#f5c842")
+    ]},
+    {icon:"🪙",label:"La Pièce Jaune",slides:[
+      {type:"badge",icon:"🪙",title:"La Pièce Jaune",holder:rareteMinArr[0]?.name||"–",stat:rareteMinArr[0]?.bonusPts||0,statl:"pts de bonus de rareté seulement",desc:"A trouvé des scores exacts… mais jamais sur les matchs les plus rares. Manque de bol !",color:"#cd7f32"},
+      pod("Classement · Moins de bonus rareté",rareteMinArr,p=>p.bonusPts+" pts rareté","#cd7f32")
+    ]},
+    {icon:"🔬",label:"Le Chirurgien",slides:[
+      {type:"badge",icon:"🔬",title:"Le Chirurgien",holder:chirurgien[0]?.rate>0?chirurgien[0].name:"–",stat:(chirurgien[0]?.rate||0)+"%",statl:"des bons pronos transformés en score exact ("+chirurgien[0]?.exacts+" ex. / "+chirurgien[0]?.goods+" bons)",desc:"Quand il voit juste sur le résultat, il voit souvent juste sur le score aussi. Précision absolue.",color:"#22c97a"},
+      pod("Classement · Le Chirurgien",chirurgien.filter(p=>p.rate>0),p=>p.rate+"% ("+p.exacts+"/"+p.goods+")","#22c97a")
     ]},
   ];
 }
@@ -1207,13 +1257,25 @@ function renderStats() {
   const getScore = p => f==="all" ? getTotalUpTo(p.name,matchIds) : getRoundPts(p.name,f);
   const scored = pl.map((p,i)=>({name:p.name,pts:getScore(p),col:COLORS[i%COLORS.length]})).sort((a,b)=>b.pts-a.pts);
 
-  // Hauteur adaptative pour barres horizontales (15 joueurs ~20px/barre)
-  const barH = Math.max(180, scored.length * 28);
-  let html='<div class="ccrd"><div class="ctitle">Points '+(f==="all"?"cumulés":f)+'</div><canvas id="c-bar" style="width:100%;height:'+barH+'px;display:block"></canvas></div>';
-  if (f==="all") html+='<div class="ccrd"><div class="ctitle">Évolution cumulée</div><canvas id="c-evo" style="width:100%;height:220px;max-height:220px;display:block"></canvas></div>';
-  html+='<div class="ccrd"><div class="ctitle">Scores exacts</div><canvas id="c-exact" style="width:100%;height:'+barH+'px;display:block"></canvas></div>';
+  // Dates uniques des matchs joués pour le graphique d'évolution
+  const allDatesList = [...new Set(matchIds.map(id=>{const m=ALL_MATCHES.find(x=>x.id===id);return m?m.date:null;}).filter(Boolean))].sort();
+  const canvW = Math.max(360, allDatesList.length * 75 + 80);
 
-  // Baromètre risque (cote moyenne)
+  // Précision : ratio exacts/bons pronos par joueur
+  const precisionData = pl.map((p,i)=>{
+    let ex=0, gd=0;
+    matchIds.forEach(id=>{
+      const d=state.matchData[id]||{},pr=(d.pronos||{})[p.name]||{};
+      if(!d||d.scoreHome===undefined||pr.home===undefined||pr.home==="")return;
+      const rH=parseInt(d.scoreHome),rA=parseInt(d.scoreAway),pH=parseInt(pr.home),pA=parseInt(pr.away);
+      if(isNaN(rH)||isNaN(pH))return;
+      if(Math.sign(rH-rA)===Math.sign(pH-pA))gd++;
+      if(pH===rH&&pA===rA)ex++;
+    });
+    return {name:p.name,rate:gd>0?Math.round(ex/gd*100):0,ex,gd,col:COLORS[i%COLORS.length]};
+  }).sort((a,b)=>b.rate-a.rate);
+
+  // Baromètre risque (cote moyenne — toujours sur tous les matchs)
   const allIds=Object.keys(state.matchData).map(Number);
   const baroData=pl.map((p,i)=>{
     let s=0,c=0;
@@ -1224,46 +1286,152 @@ function renderStats() {
       s+=cote;c++;});
     return {name:p.name,avg:c?Math.round(s/c):0,col:COLORS[i%COLORS.length]};
   }).sort((a,b)=>b.avg-a.avg);
-  html+='<div class="ccrd"><div class="ctitle">Baromètre de risque (cote moy.)</div><canvas id="c-baro" height="180"></canvas></div>';
+
+  let html='';
+  if (f==="all") {
+    html+='<div class="ccrd">'+
+      '<div class="ctitle">Évolution des points · Toute la ligue</div>'+
+      '<div id="evo-scroll" style="overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.15) transparent;margin:0 -14px;padding:0 14px 6px;-webkit-overflow-scrolling:touch">'+
+      '<canvas id="c-evo-wide" style="height:260px;display:block" width="'+canvW+'" height="260"></canvas>'+
+      '</div>'+
+      '<div id="evo-legend" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px"></div>'+
+      '</div>';
+  }
+  html+='<div class="ccrd"><div class="ctitle">Classement · Points '+(f==="all"?"cumulés":f)+'</div><div style="position:relative;height:200px"><canvas id="c-bar"></canvas></div></div>';
+  html+='<div class="ccrd"><div class="ctitle">Scores exacts</div><div style="position:relative;height:200px"><canvas id="c-exact"></canvas></div></div>';
+  html+='<div class="ccrd"><div class="ctitle">Précision · exacts / bons pronos</div><div style="position:relative;height:200px"><canvas id="c-precision"></canvas></div></div>';
+  html+='<div class="ccrd"><div class="ctitle">Baromètre de risque (cote moy.)</div><div style="position:relative;height:200px"><canvas id="c-baro"></canvas></div></div>';
 
   document.getElementById("stats-body").innerHTML=html;
 
   setTimeout(()=>{
-    // Bar chart horizontal (indexAxis:'y')
-    const cbarEl = document.getElementById("c-bar");
-    cbarEl.height = barH;
-    charts.push(new Chart(cbarEl.getContext("2d"),{
-      type:"bar",
-      data:{labels:scored.map(p=>p.name),datasets:[{data:scored.map(p=>p.pts),backgroundColor:scored.map(p=>p.col+"aa"),borderColor:scored.map(p=>p.col),borderWidth:1.5,borderRadius:4}]},
-      options:{
-        indexAxis:"y",responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.x+" pts"}}},
-        scales:{
-          x:{ticks:{color:"#555",font:{size:10}},grid:{color:"rgba(255,255,255,.06)"},beginAtZero:true},
-          y:{ticks:{color:"#a09e99",font:{size:11}},grid:{display:false}}
+    const fmtDate = d => new Date(d).toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
+    const xTick = {color:"#a09e99",font:{size:10},maxRotation:40,minRotation:30};
+    const yTick = {color:"#555",font:{size:10}};
+    const gridY = {color:"rgba(255,255,255,.06)"};
+
+    // ── Graphique d'évolution large (scrollable) ──
+    if (f==="all") {
+      const evoEl = document.getElementById("c-evo-wide");
+      if (evoEl) {
+        evoEl.style.width = canvW+"px";
+        // Construire les datasets date par date
+        const doneByDate = {};
+        matchIds.forEach(id => {
+          const m=ALL_MATCHES.find(x=>x.id===id);
+          if(!m) return;
+          const d=state.matchData[id];
+          if(!d||d.scoreHome===undefined||d.scoreHome==="") return;
+          if(!doneByDate[m.date]) doneByDate[m.date]=[];
+          doneByDate[m.date].push(id);
+        });
+        const sortedDates = Object.keys(doneByDate).sort();
+        const ds = pl.map((p,i) => {
+          const isMe = p.isMe;
+          let cum = 0;
+          const data = sortedDates.map(dt => {
+            (doneByDate[dt]||[]).forEach(id => {
+              const d=state.matchData[id]||{};
+              cum += computePts(id, p.name, d, (d.pronos||{})[p.name]||{});
+            });
+            return cum;
+          });
+          return {
+            label:p.name, data,
+            borderColor: isMe ? COLORS[i%COLORS.length] : COLORS[i%COLORS.length]+"55",
+            backgroundColor: isMe ? COLORS[i%COLORS.length]+"18" : "transparent",
+            fill: isMe ? "origin" : false,
+            tension:0.35,
+            pointRadius: isMe ? 5 : 2,
+            pointHoverRadius:8,
+            borderWidth: isMe ? 2.5 : 1.5,
+          };
+        });
+        const evoChart = new Chart(evoEl.getContext("2d"),{
+          type:"line",
+          data:{labels:sortedDates.map(fmtDate), datasets:ds},
+          options:{
+            responsive:false, maintainAspectRatio:false,
+            interaction:{mode:"index",intersect:false},
+            plugins:{
+              legend:{display:false},
+              tooltip:{
+                backgroundColor:"rgba(10,10,10,0.92)",titleColor:"#a09e99",bodyColor:"#f0efe9",
+                borderColor:"rgba(255,255,255,0.1)",borderWidth:1,padding:10,
+                callbacks:{
+                  label:item=>{
+                    const prev=item.dataIndex>0?item.dataset.data[item.dataIndex-1]:0;
+                    const gain=item.parsed.y-prev;
+                    return " "+item.dataset.label+": "+item.parsed.y+" pts"+(gain>0?" (+"+gain+")":"");
+                  }
+                }
+              }
+            },
+            scales:{
+              x:{ticks:{color:"#555",font:{size:10}},grid:{color:"rgba(255,255,255,.04)"}},
+              y:{ticks:yTick,grid:gridY,beginAtZero:true}
+            }
+          }
+        });
+        charts.push(evoChart);
+
+        // Auto-scroll vers la date sélectionnée par le slider
+        const scrollEl = document.getElementById("evo-scroll");
+        if (scrollEl && sortedDates.length > 1) {
+          const curDate = sliderDates[statSliderIdx];
+          const dateIdx = curDate ? Math.max(0, sortedDates.lastIndexOf(curDate)) : sortedDates.length-1;
+          const progress = dateIdx / Math.max(sortedDates.length-1, 1);
+          const maxScroll = canvW - scrollEl.clientWidth;
+          scrollEl.scrollLeft = Math.max(0, progress * maxScroll - 60);
+        }
+
+        // Légende compacte
+        const legendEl = document.getElementById("evo-legend");
+        if (legendEl) {
+          legendEl.innerHTML = pl.map((p,i)=>
+            '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--t2)">'+
+            '<div style="width:14px;height:'+(p.isMe?3:2)+'px;background:'+COLORS[i%COLORS.length]+';border-radius:1px;flex-shrink:0"></div>'+
+            '<span>'+(p.isMe?'<b>':'')+p.name+(p.isMe?'</b>':'')+'</span></div>'
+          ).join("");
         }
       }
-    }));
-
-    // Evolution
-    if (f==="all"){
-      const evo=document.getElementById("c-evo");
-      evo.height=220;
-      const ds=pl.map((p,i)=>{let cum=0;return{label:p.name,data:["J1","J2","J3"].map(r=>{cum+=getRoundPts(p.name,r);return cum;}),borderColor:COLORS[i%COLORS.length],backgroundColor:"transparent",tension:.4,pointRadius:3,borderWidth:2};});
-      charts.push(new Chart(evo.getContext("2d"),{type:"line",data:{labels:["J1","J2","J3"],datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{position:"bottom",labels:{boxWidth:10,padding:8,color:"#888",font:{size:10}}}},scales:{x:{ticks:{color:"#555",font:{size:11}},grid:{color:"rgba(255,255,255,.04)"}},y:{ticks:{color:"#555",font:{size:10}},grid:{color:"rgba(255,255,255,.06)"},beginAtZero:true}}}}));
     }
 
-    // Exacts
-    const ex=pl.map((p,i)=>({name:p.name,n:getExactsUpTo(p.name,matchIds),col:COLORS[i%COLORS.length]})).sort((a,b)=>b.n-a.n);
-    charts.push(new Chart(document.getElementById("c-exact").getContext("2d"),{
-      type:"bar",data:{labels:ex.map(p=>p.name),datasets:[{data:ex.map(p=>p.n),backgroundColor:ex.map(p=>p.col+"88"),borderColor:ex.map(p=>p.col),borderWidth:1.5,borderRadius:4}]},
-      options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#555",font:{size:9}},grid:{display:false}},y:{ticks:{color:"#555",font:{size:10},stepSize:1},grid:{color:"rgba(255,255,255,.06)"},beginAtZero:true}}}
+    // ── Points bar (vertical, sans bug de stretch) ──
+    charts.push(new Chart(document.getElementById("c-bar").getContext("2d"),{
+      type:"bar",
+      data:{labels:scored.map(p=>p.name),datasets:[{data:scored.map(p=>p.pts),backgroundColor:scored.map(p=>p.col+"aa"),borderColor:scored.map(p=>p.col),borderWidth:1.5,borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y+" pts"}}},
+        scales:{x:{ticks:xTick,grid:{display:false}},y:{ticks:yTick,grid:gridY,beginAtZero:true}}}
     }));
 
-    // Baromètre
+    // ── Exacts ──
+    const ex=pl.map((p,i)=>({name:p.name,n:getExactsUpTo(p.name,matchIds),col:COLORS[i%COLORS.length]})).sort((a,b)=>b.n-a.n);
+    charts.push(new Chart(document.getElementById("c-exact").getContext("2d"),{
+      type:"bar",
+      data:{labels:ex.map(p=>p.name),datasets:[{data:ex.map(p=>p.n),backgroundColor:ex.map(p=>p.col+"88"),borderColor:ex.map(p=>p.col),borderWidth:1.5,borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y+" exacts"}}},
+        scales:{x:{ticks:xTick,grid:{display:false}},y:{ticks:{...yTick,stepSize:1},grid:gridY,beginAtZero:true}}}
+    }));
+
+    // ── Précision exacts/bons ──
+    charts.push(new Chart(document.getElementById("c-precision").getContext("2d"),{
+      type:"bar",
+      data:{labels:precisionData.map(p=>p.name),datasets:[{data:precisionData.map(p=>p.rate),backgroundColor:precisionData.map(p=>p.col+"88"),borderColor:precisionData.map(p=>p.col),borderWidth:1.5,borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const p=precisionData[ctx.dataIndex];return ctx.parsed.y+"% ("+p.ex+"/"+p.gd+" bons)";}}}},
+        scales:{x:{ticks:xTick,grid:{display:false}},y:{ticks:yTick,grid:gridY,beginAtZero:true,max:100}}}
+    }));
+
+    // ── Baromètre ──
     charts.push(new Chart(document.getElementById("c-baro").getContext("2d"),{
-      type:"bar",data:{labels:baroData.map(p=>p.name),datasets:[{data:baroData.map(p=>p.avg),backgroundColor:baroData.map(p=>p.col+"88"),borderColor:baroData.map(p=>p.col),borderWidth:1.5,borderRadius:4}]},
-      options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#555",font:{size:9}},grid:{display:false}},y:{ticks:{color:"#555",font:{size:10}},grid:{color:"rgba(255,255,255,.06)"},beginAtZero:true}}}
+      type:"bar",
+      data:{labels:baroData.map(p=>p.name),datasets:[{data:baroData.map(p=>p.avg),backgroundColor:baroData.map(p=>p.col+"88"),borderColor:baroData.map(p=>p.col),borderWidth:1.5,borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y+" cote moy."}}},
+        scales:{x:{ticks:xTick,grid:{display:false}},y:{ticks:yTick,grid:gridY,beginAtZero:true}}}
     }));
   },50);
 }
@@ -1272,22 +1440,31 @@ function renderStats() {
 function setInputFilter(el,f){document.querySelectorAll(".frbtn").forEach(b=>b.classList.remove("on"));el.classList.add("on");inputFilter=f;renderMatchList();}
 
 function renderMatchList(){
-  let ms=[...MATCHES];
-  if(inputFilter==="J1") ms=ms.filter(m=>m.round===1);
-  else if(inputFilter==="J2") ms=ms.filter(m=>m.round===2);
-  else if(inputFilter==="J3") ms=ms.filter(m=>m.round===3);
-  else if(inputFilter==="pending") ms=ms.filter(m=>{const d=state.matchData[m.id];return !d||d.scoreHome===undefined||d.scoreHome==="";});
+  let ms;
+  if(inputFilter==="finale") ms=[...KNOCKOUT_MATCHES];
+  else if(inputFilter==="pending") ms=[...ALL_MATCHES].filter(m=>{const d=state.matchData[m.id];return !d||d.scoreHome===undefined||d.scoreHome==="";});
+  else {
+    ms=[...MATCHES];
+    if(inputFilter==="J1") ms=ms.filter(m=>m.round===1);
+    else if(inputFilter==="J2") ms=ms.filter(m=>m.round===2);
+    else if(inputFilter==="J3") ms=ms.filter(m=>m.round===3);
+  }
   const list=document.getElementById("match-list");
   list.innerHTML=ms.map(m=>{
     const d=state.matchData[m.id]||{};
     const done=d.scoreHome!==undefined&&d.scoreHome!=="";
     const date=new Date(m.date).toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
     const filled=state.players.filter(p=>{const pr=(d.pronos||{})[p.name];return pr&&pr.home!==undefined&&pr.home!=="";}).length;
+    const isKo=!m.group;
+    const homeTeam=isKo?(d.homeTeam||"TBD"):m.home;
+    const awayTeam=isKo?(d.awayTeam||"TBD"):m.away;
+    const badge=isKo?(PHASE_LABELS[m.phase]||m.phase):m.group;
+    const sublabel=isKo?date+' · '+(PHASE_LABELS[m.phase]||m.phase):date+' · J'+m.round;
     return '<div class="mitem">'+
       '<div class="mhdr" id="mh'+m.id+'" onclick="toggleM('+m.id+')">'+
-      '<div class="mgbadge">'+m.group+'</div>'+
-      '<div style="flex:1;min-width:0"><div class="mteams">'+m.home+' – '+m.away+'</div>'+
-      '<div class="msub">'+date+' · J'+m.round+' · '+filled+'/'+state.players.length+' pronos</div></div>'+
+      '<div class="mgbadge" style="'+(isKo?'font-size:9px;':'')+'">'+badge+'</div>'+
+      '<div style="flex:1;min-width:0"><div class="mteams">'+homeTeam+' – '+awayTeam+'</div>'+
+      '<div class="msub">'+sublabel+' · '+filled+'/'+state.players.length+' pronos</div></div>'+
       (done?'<span class="bscore bsdone">'+d.scoreHome+'-'+d.scoreAway+'</span>':'<span class="bscore bspend">–</span>')+
       '<span class="mchev">▼</span></div>'+
       '<div class="mbody" id="mb'+m.id+'">'+renderMBody(m,d)+'</div>'+
@@ -1346,7 +1523,7 @@ function toggleM(id){
 function setBonus(matchId,key){
   if(!state.matchData[matchId])state.matchData[matchId]={};
   state.matchData[matchId].bonusType=key;
-  const m=MATCHES.find(x=>x.id===matchId);
+  const m=ALL_MATCHES.find(x=>x.id===matchId);
   document.getElementById("mb"+matchId).innerHTML=renderMBody(m,state.matchData[matchId]);
 }
 
@@ -1404,7 +1581,7 @@ function renderRankChart() {
   Object.keys(state.matchData).forEach(id => {
     const d = state.matchData[id];
     if (!d || d.scoreHome === undefined || d.scoreHome === "") return;
-    const m = MATCHES.find(x => x.id == id);
+    const m = ALL_MATCHES.find(x => x.id == id);
     if (!m) return;
     if (!doneByDate[m.date]) doneByDate[m.date] = [];
     doneByDate[m.date].push(parseInt(id));
@@ -1514,8 +1691,8 @@ function buildPlayerProfile(pName) {
     // Prono nul
     if (pH === pA) { drawPronos++; if (rH === rA) drawCorrect++; }
 
-    if (pts > bestPts) { bestPts = pts; const m = MATCHES.find(x=>x.id===id); bestMatch = m ? m.home+" – "+m.away+" ("+pts+" pts)" : null; }
-    if (isNear && !isExact) { const m = MATCHES.find(x=>x.id===id); if (m) worstMatch = m.home+" – "+m.away+" ("+rH+"-"+rA+" vs "+pH+"-"+pA+")"; }
+    if (pts > bestPts) { bestPts = pts; const m = ALL_MATCHES.find(x=>x.id===id); if(m){const hn=m.home||(state.matchData[id]||{}).homeTeam||"TBD",an=m.away||(state.matchData[id]||{}).awayTeam||"TBD"; bestMatch = hn+" – "+an+" ("+pts+" pts)";} }
+    if (isNear && !isExact) { const m = ALL_MATCHES.find(x=>x.id===id); if (m) {const hn=m.home||(state.matchData[id]||{}).homeTeam||"TBD",an=m.away||(state.matchData[id]||{}).awayTeam||"TBD"; worstMatch = hn+" – "+an+" ("+rH+"-"+rA+" vs "+pH+"-"+pA+")";} }
   });
 
   const avgCote = coteCount ? Math.round(coteSum/coteCount) : 0;
@@ -1523,6 +1700,7 @@ function buildPlayerProfile(pName) {
   const goodRate = coteCount ? Math.round(goods/coteCount*100) : 0;
   const favRate = coteCount ? Math.round(favCount/coteCount*100) : 0;
   const drawRate = drawPronos ? Math.round(drawCorrect/drawPronos*100) : 0;
+  const exactsOnGoodRate = goods > 0 ? Math.round(exacts/goods*100) : 0;
 
   // Archétype (percentile relatif dans la ligue — 4-5 profils distincts garantis)
   let archetype, arcColor;
@@ -1602,8 +1780,9 @@ function buildPlayerProfile(pName) {
   phrases.push({ico:"🔥", txt: "Meilleure série : <b>"+maxStreak+" bon"+(maxStreak>1?"s":"")+" résultat"+(maxStreak>1?"s":"")+" d'affilée</b>"});
   phrases.push({ico:"📈", txt: "<b>"+favRate+"%</b> de tes pronos misent sur le favori (cote < 80)"});
   if (drawPronos > 0) phrases.push({ico:"🤝", txt: "Tu as pronostiqué <b>"+drawPronos+" nul"+(drawPronos>1?"s":"")+"</b> — "+drawCorrect+" correct"+(drawCorrect>1?"s":"")+" ("+drawRate+"%)"});
+  if (goods >= 3) phrases.push({ico:"🔬", txt: "Taux de conversion : <b>"+exactsOnGoodRate+"% de tes bons pronos</b> aboutissent à un score exact"});
 
-  return { archetype, arcColor, exactRate, goodRate, avgCote, favRate, maxStreak, exacts, goods, played:coteCount, total, myRank, exactRank, goodRank, riskRank, radarData, phrases, nearMiss };
+  return { archetype, arcColor, exactRate, goodRate, avgCote, favRate, maxStreak, exacts, goods, played:coteCount, total, myRank, exactRank, goodRank, riskRank, radarData, phrases, nearMiss, exactsOnGoodRate };
 }
 
 function renderProfil() {
@@ -1645,6 +1824,7 @@ function renderProfilCard(pName) {
   html += '<div class="pst"><div class="pst-ico">📊</div><div class="pst-val">'+prof.total+'<span class="pst-den"> pts</span></div><div class="pst-lbl">Points totaux</div></div>';
   html += '<div class="pst"><div class="pst-ico">⚽</div><div class="pst-val">'+prof.goods+'<span class="pst-den">/'+prof.played+'</span></div><div class="pst-sub">'+prof.goodRate+'% · '+prof.goodRank+ord(prof.goodRank)+' ligue</div><div class="pst-lbl">Bons résultats</div></div>';
   html += '<div class="pst"><div class="pst-ico">✨</div><div class="pst-val">'+prof.exacts+'<span class="pst-den">/'+prof.played+'</span></div><div class="pst-sub">'+prof.exactRate+'% · '+prof.exactRank+ord(prof.exactRank)+' ligue</div><div class="pst-lbl">Scores exacts</div></div>';
+  html += '<div class="pst" style="grid-column:1/-1"><div class="pst-ico">🔬</div><div class="pst-val">'+prof.exactsOnGoodRate+'%<span class="pst-den"> conv.</span></div><div class="pst-sub">'+prof.exacts+' exact'+(prof.exacts!==1?'s':'')+' / '+prof.goods+' bon'+(prof.goods!==1?'s':'prono')+'</div><div class="pst-lbl">Conversion exact / bon résultat</div></div>';
   html += '</div>';
   html += '</div>';
 
