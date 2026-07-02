@@ -88,6 +88,10 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
 .ftabs::-webkit-scrollbar{display:none}
 .ft{padding:5px 13px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;background:var(--s2);color:var(--t2);white-space:nowrap;flex-shrink:0}
 .ft.on{background:var(--ac);color:#fff}
+.compare-chips{display:none;flex-wrap:wrap;gap:6px;padding:2px 16px 10px}
+.compare-chips.open{display:flex}
+.cchip{padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;background:var(--s2);color:var(--t2);border:1.5px solid transparent;white-space:nowrap;transition:all .15s}
+.cchip.on{border-color:var(--ac);color:var(--ac);font-weight:600}
 .ccrd{background:var(--s1);border-radius:var(--r);margin:0 16px 10px;padding:14px}
 .ctitle{font-size:11px;font-weight:600;color:var(--t2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em}
 
@@ -229,7 +233,9 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
       <div class="ft" onclick="setStatTab(this,'J1')">J1</div>
       <div class="ft" onclick="setStatTab(this,'J2')">J2</div>
       <div class="ft" onclick="setStatTab(this,'J3')">J3</div>
+      <div class="ft" id="compare-btn" onclick="toggleCompareMode()">Comparer</div>
     </div>
+    <div class="compare-chips" id="compare-chips"></div>
     <div id="stats-body"></div>
   </div>
 
@@ -408,6 +414,8 @@ let sliderIdx = 0;
 let statSliderIdx = 0;
 let statFilter = "all";
 let inputFilter = "all";
+let compareMode = false;
+let compareSel = new Set();
 let charts = [];
 let storyData = {idx:0,slides:[],timer:null};
 
@@ -1245,24 +1253,59 @@ function storyPrev(){clearInterval(storyData.timer);if(storyData.idx>0){storyDat
 function closeStory(){clearInterval(storyData.timer);document.getElementById("sov").classList.remove("on");}
 
 // ── Stats ──
-function setStatTab(el,f){document.querySelectorAll(".ft").forEach(t=>t.classList.remove("on"));el.classList.add("on");statFilter=f;renderStats();}
+function setStatTab(el,f) {
+  document.querySelectorAll(".ft").forEach(t=>t.classList.remove("on"));
+  el.classList.add("on");
+  // Re-apply compare-btn state
+  if (compareMode) document.getElementById("compare-btn").classList.add("on");
+  statFilter=f; renderStats();
+}
+function toggleCompareMode() {
+  compareMode = !compareMode;
+  const btn = document.getElementById("compare-btn");
+  const chips = document.getElementById("compare-chips");
+  btn.classList.toggle("on", compareMode);
+  chips.classList.toggle("open", compareMode);
+  if (!compareMode) { compareSel.clear(); }
+  renderCompareChips();
+  renderStats();
+}
+function toggleComparePlayer(name) {
+  if (compareSel.has(name)) compareSel.delete(name); else compareSel.add(name);
+  renderCompareChips();
+  renderStats();
+}
+function renderCompareChips() {
+  const el = document.getElementById("compare-chips");
+  if (!el) return;
+  el.innerHTML = state.players.map(p=>
+    `<div class="cchip${compareSel.has(p.name)?' on':''}" onclick="toggleComparePlayer('${p.name}')">${p.name}</div>`
+  ).join("");
+}
 
 function renderStats() {
   charts.forEach(c=>c.destroy()); charts=[];
   if (!state.players.length){document.getElementById("stats-body").innerHTML='<div class="loader"><div class="spin"></div></div>';return;}
   const matchIds = getMatchIdsUpTo(statSliderIdx);
   const f=statFilter;
-  const pl=state.players;
+
+  // Stable color per player regardless of filtering
+  const playerCol = name => COLORS[state.players.findIndex(p=>p.name===name)%COLORS.length];
+
+  // Filter to selected players in compare mode (empty selection = all)
+  const pl = (compareMode && compareSel.size > 0)
+    ? state.players.filter(p=>compareSel.has(p.name))
+    : state.players;
 
   const getScore = p => f==="all" ? getTotalUpTo(p.name,matchIds) : getRoundPts(p.name,f);
-  const scored = pl.map((p,i)=>({name:p.name,pts:getScore(p),col:COLORS[i%COLORS.length]})).sort((a,b)=>b.pts-a.pts);
+  const scored = pl.map(p=>({name:p.name,pts:getScore(p),col:playerCol(p.name)})).sort((a,b)=>b.pts-a.pts);
 
   // Dates uniques des matchs joués pour le graphique d'évolution
   const allDatesList = [...new Set(matchIds.map(id=>{const m=ALL_MATCHES.find(x=>x.id===id);return m?m.date:null;}).filter(Boolean))].sort();
   const canvW = Math.max(360, allDatesList.length * 75 + 80);
 
   // Précision : ratio exacts/bons pronos par joueur
-  const precisionData = pl.map((p,i)=>{
+  const precisionData = pl.map(p=>{
     let ex=0, gd=0;
     matchIds.forEach(id=>{
       const d=state.matchData[id]||{},pr=(d.pronos||{})[p.name]||{};
@@ -1272,19 +1315,22 @@ function renderStats() {
       if(Math.sign(rH-rA)===Math.sign(pH-pA))gd++;
       if(pH===rH&&pA===rA)ex++;
     });
-    return {name:p.name,rate:gd>0?Math.round(ex/gd*100):0,ex,gd,col:COLORS[i%COLORS.length]};
+    return {name:p.name,rate:gd>0?Math.round(ex/gd*100):0,ex,gd,col:playerCol(p.name)};
   }).sort((a,b)=>b.rate-a.rate);
 
-  // Baromètre risque (cote moyenne — toujours sur tous les matchs)
+  // Baromètre risque : cote moyenne des pronos joués (direction du pari, pas du résultat)
   const allIds=Object.keys(state.matchData).map(Number);
-  const baroData=pl.map((p,i)=>{
+  const baroData=pl.map(p=>{
     let s=0,c=0;
-    allIds.forEach(id=>{const d=state.matchData[id]||{},pr=(d.pronos||{})[p.name]||{};
-      if(!d||d.scoreHome===undefined||pr.home===undefined||pr.home==="")return;
-      const rH=parseInt(d.scoreHome),rA=parseInt(d.scoreAway);
-      const cote=rH>rA?(d.cote1||d.coteHome||50):rA>rH?(d.cote2||d.coteAway||50):(d.coteN||50);
-      s+=cote;c++;});
-    return {name:p.name,avg:c?Math.round(s/c):0,col:COLORS[i%COLORS.length]};
+    allIds.forEach(id=>{
+      const d=state.matchData[id]||{},pr=(d.pronos||{})[p.name]||{};
+      if(pr.home===undefined||pr.home==="")return;
+      const pH=parseInt(pr.home),pA=parseInt(pr.away);
+      if(isNaN(pH))return;
+      const cote=pH>pA?(d.cote1||d.coteHome||50):pA>pH?(d.cote2||d.coteAway||50):(d.coteN||50);
+      s+=cote;c++;
+    });
+    return {name:p.name,avg:c?Math.round(s/c):0,col:playerCol(p.name)};
   }).sort((a,b)=>b.avg-a.avg);
 
   let html='';
@@ -1326,8 +1372,9 @@ function renderStats() {
           doneByDate[m.date].push(id);
         });
         const sortedDates = Object.keys(doneByDate).sort();
-        const ds = pl.map((p,i) => {
+        const ds = pl.map(p => {
           const isMe = p.isMe;
+          const col = playerCol(p.name);
           let cum = 0;
           const data = sortedDates.map(dt => {
             (doneByDate[dt]||[]).forEach(id => {
@@ -1338,13 +1385,13 @@ function renderStats() {
           });
           return {
             label:p.name, data,
-            borderColor: isMe ? COLORS[i%COLORS.length] : COLORS[i%COLORS.length]+"55",
-            backgroundColor: isMe ? COLORS[i%COLORS.length]+"18" : "transparent",
+            borderColor: isMe ? col : col+"66",
+            backgroundColor: isMe ? col+"18" : "transparent",
             fill: isMe ? "origin" : false,
             tension:0.35,
-            pointRadius: isMe ? 5 : 2,
+            pointRadius: isMe ? 5 : (compareMode ? 4 : 2),
             pointHoverRadius:8,
-            borderWidth: isMe ? 2.5 : 1.5,
+            borderWidth: isMe ? 2.5 : (compareMode ? 2 : 1.5),
           };
         });
         const evoChart = new Chart(evoEl.getContext("2d"),{
@@ -1352,7 +1399,7 @@ function renderStats() {
           data:{labels:sortedDates.map(fmtDate), datasets:ds},
           options:{
             responsive:false, maintainAspectRatio:false,
-            interaction:{mode:"index",intersect:false},
+            interaction:{mode:"nearest",intersect:true},
             plugins:{
               legend:{display:false},
               tooltip:{
@@ -1388,9 +1435,9 @@ function renderStats() {
         // Légende compacte
         const legendEl = document.getElementById("evo-legend");
         if (legendEl) {
-          legendEl.innerHTML = pl.map((p,i)=>
+          legendEl.innerHTML = pl.map(p=>
             '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--t2)">'+
-            '<div style="width:14px;height:'+(p.isMe?3:2)+'px;background:'+COLORS[i%COLORS.length]+';border-radius:1px;flex-shrink:0"></div>'+
+            '<div style="width:14px;height:'+(p.isMe?3:2)+'px;background:'+playerCol(p.name)+';border-radius:1px;flex-shrink:0"></div>'+
             '<span>'+(p.isMe?'<b>':'')+p.name+(p.isMe?'</b>':'')+'</span></div>'
           ).join("");
         }
@@ -1407,7 +1454,7 @@ function renderStats() {
     }));
 
     // ── Exacts ──
-    const ex=pl.map((p,i)=>({name:p.name,n:getExactsUpTo(p.name,matchIds),col:COLORS[i%COLORS.length]})).sort((a,b)=>b.n-a.n);
+    const ex=pl.map(p=>({name:p.name,n:getExactsUpTo(p.name,matchIds),col:playerCol(p.name)})).sort((a,b)=>b.n-a.n);
     charts.push(new Chart(document.getElementById("c-exact").getContext("2d"),{
       type:"bar",
       data:{labels:ex.map(p=>p.name),datasets:[{data:ex.map(p=>p.n),backgroundColor:ex.map(p=>p.col+"88"),borderColor:ex.map(p=>p.col),borderWidth:1.5,borderRadius:4}]},
@@ -1608,7 +1655,6 @@ function renderRankChart() {
       pointRadius: 4,
       pointHoverRadius: 7,
       borderWidth: p.isMe ? 3 : 1.5,
-      borderDash: p.isMe ? [] : [],
     };
   });
 
@@ -1619,7 +1665,7 @@ function renderRankChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      interaction: { mode: "index", intersect: false },
+      interaction: { mode: "nearest", intersect: true },
       plugins: {
         legend: { display: false },
         tooltip: {
