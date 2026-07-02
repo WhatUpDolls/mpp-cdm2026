@@ -309,8 +309,8 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
     <button class="scls" onclick="closeStory()">✕</button>
   </div>
   <div class="scont" id="scont"></div>
-  <div class="stl" onclick="storyPrev()"></div>
-  <div class="str" onclick="storyNext()"></div>
+  <div class="stl" ontouchstart="storyHoldStart()" ontouchend="storyHoldEnd()" onmousedown="storyHoldStart()" onmouseup="storyHoldEnd()" onclick="storyPrev()"></div>
+  <div class="str" ontouchstart="storyHoldStart()" ontouchend="storyHoldEnd()" onmousedown="storyHoldStart()" onmouseup="storyHoldEnd()" onclick="storyNext()"></div>
 </div>
 
 <div class="notif" id="notif"></div>
@@ -675,7 +675,8 @@ function computeAllBadges() {
   const allIds = Object.keys(state.matchData).map(Number);
   const pl = state.players.map((p,i) => ({...p, pts:getTotalUpTo(p.name,allIds), exacts:getExactsUpTo(p.name,allIds), col:COLORS[i%COLORS.length]})).sort((a,b)=>b.pts-a.pts);
 
-  // Le Maudit : plus de pronos à ±1 but sans être exact
+  // Le Maudit : pronos ratés d'exactement 1 but total (une seule équipe décalée de 1)
+  // ex: prono 1-0, résultat 2-0 (OUI) ou 1-1 (OUI), mais 2-1 (NON, 2 buts de décalage total)
   const maudit = state.players.map(p => {
     let near = 0;
     allIds.forEach(id => {
@@ -683,7 +684,7 @@ function computeAllBadges() {
       if (!d||d.scoreHome===undefined||pr.home===undefined||pr.home==="") return;
       const rH=parseInt(d.scoreHome),rA=parseInt(d.scoreAway),pH=parseInt(pr.home),pA=parseInt(pr.away);
       if (isNaN(rH)||isNaN(pH)) return;
-      if (!(pH===rH&&pA===rA) && Math.abs(pH-rH)<=1 && Math.abs(pA-rA)<=1) near++;
+      if (Math.abs(pH-rH)+Math.abs(pA-rA)===1) near++;
     });
     return {name:p.name, near};
   }).sort((a,b)=>b.near-a.near);
@@ -706,14 +707,15 @@ function computeAllBadges() {
   // Boss Final : meilleur total en phase à élimination directe (matchs hors MATCHES)
   const bossFinal = state.players.map(p => ({name:p.name,pts:getKnockoutPts(p.name)})).sort((a,b)=>b.pts-a.pts);
 
-  // Baromètre : cote moyenne jouée
+  // Baromètre : cote moyenne de la direction jouée (pari, pas résultat)
   const baro = state.players.map(p => {
     let sum=0,cnt=0;
     allIds.forEach(id => {
       const d=state.matchData[id]||{},pr=(d.pronos||{})[p.name]||{};
-      if (!d||d.scoreHome===undefined||pr.home===undefined||pr.home==="") return;
-      const rH=parseInt(d.scoreHome),rA=parseInt(d.scoreAway);
-      const cote=rH>rA?(d.cote1||d.coteHome||50):rA>rH?(d.cote2||d.coteAway||50):(d.coteN||50);
+      if(pr.home===undefined||pr.home==="") return;
+      const pH=parseInt(pr.home),pA=parseInt(pr.away);
+      if(isNaN(pH)) return;
+      const cote=pH>pA?(d.cote1||d.coteHome||50):pA>pH?(d.cote2||d.coteAway||50):(d.coteN||50);
       sum+=cote; cnt++;
     });
     return {name:p.name,avg:cnt?Math.round(sum/cnt):0};
@@ -826,7 +828,9 @@ function computeAllBadges() {
     return { pair: bestPair, same: bestSame, total: bestTotal };
   })();
 
-  // La Même Longueur d'Onde : la paire dont l'évolution des points est la plus corrélée
+  // La Même Longueur d'Onde : corrélation sur les POINTS PAR MATCH (pas les cumulés)
+  // Les cumulés corrèlent artificiellement car les deux séries montent ensemble.
+  // On mesure ici si les deux joueurs performent sur les mêmes matchs individuels.
   const longueurDonde = (() => {
     const orderedIds = allIds.slice().sort((a,b) => {
       const ma = ALL_MATCHES.find(x=>x.id===a), mb = ALL_MATCHES.find(x=>x.id===b);
@@ -836,15 +840,13 @@ function computeAllBadges() {
     for (let i = 0; i < state.players.length; i++) {
       for (let j = i+1; j < state.players.length; j++) {
         const p1 = state.players[i], p2 = state.players[j];
-        let cum1 = 0, cum2 = 0;
         const data1 = [], data2 = [];
         orderedIds.forEach(id => {
           const d = state.matchData[id]||{};
-          cum1 += computePts(id, p1.name, d, (d.pronos||{})[p1.name]||{});
-          cum2 += computePts(id, p2.name, d, (d.pronos||{})[p2.name]||{});
-          data1.push(cum1); data2.push(cum2);
+          data1.push(computePts(id, p1.name, d, (d.pronos||{})[p1.name]||{}));
+          data2.push(computePts(id, p2.name, d, (d.pronos||{})[p2.name]||{}));
         });
-        if (data1.length < 3) continue;
+        if (data1.length < 5) continue;
         const n = data1.length;
         const m1 = data1.reduce((a,b)=>a+b,0)/n, m2 = data2.reduce((a,b)=>a+b,0)/n;
         const num = data1.reduce((s,v,k)=>s+(v-m1)*(data2[k]-m2),0);
@@ -990,75 +992,75 @@ function computeAllBadges() {
 
   // Helpers podium
   const pCol=name=>{const i=state.players.findIndex(p=>p.name===name);return i>=0?COLORS[i%COLORS.length]:"#888";};
-  const top=(arr,fmt,n=5)=>arr.slice(0,n).map(p=>({name:p.name,stat:fmt(p),col:pCol(p.name)}));
-  const pod=(title,arr,fmt,color)=>({type:"podium-stat",title,items:top(arr,fmt),color});
+  const top=(arr,valFn,fmt,n=5)=>{const res=[];let lastVal=undefined,lastRank=0;for(let i=0;i<arr.length;i++){const v=valFn(arr[i]);if(v!==lastVal){lastRank=i+1;lastVal=v;}if(lastRank>n)break;res.push({name:arr[i].name,stat:fmt(arr[i]),col:pCol(arr[i].name),rank:lastRank});}return res;};
+  const pod=(title,arr,valFn,fmt,color)=>({type:"podium-stat",title,items:top(arr,valFn,fmt),color});
 
   return [
     {icon:"🏆",label:"Podium",slides:[{type:"podium",data:pl.slice(0,3)}]},
     {icon:"🏟️",label:"Boss des Poules",slides:[
       {type:"badge",icon:"🏟️",title:"Boss des Poules",holder:bossPoules[0]?.name||"–",stat:bossPoules[0]?.pts||0,statl:"pts en phase de groupes",desc:"A dominé la phase de poules de bout en bout. Roi des groupes.",color:"#e65c35"},
-      pod("Classement · Phase de groupes",bossPoules,p=>p.pts+" pts","#e65c35")
+      pod("Classement · Phase de groupes",bossPoules,p=>p.pts,p=>p.pts+" pts","#e65c35")
     ]},
     {icon:"⚡",label:"Boss Final",slides:[
       {type:"badge",icon:"⚡",title:"Boss Final",holder:bossFinal[0]?.pts>0?bossFinal[0]?.name||"–":"–",stat:bossFinal[0]?.pts||0,statl:"pts en phase à élimination directe",desc:"Réservé au vrai champion. Brille quand les enjeux sont au maximum.",color:"#f72585"},
-      pod("Classement · Phase finale",bossFinal.filter(p=>p.pts>0),p=>p.pts+" pts","#f72585")
+      pod("Classement · Phase finale",bossFinal.filter(p=>p.pts>0),p=>p.pts,p=>p.pts+" pts","#f72585")
     ]},
     {icon:"😤",label:"Le Maudit",slides:[
-      {type:"badge",icon:"😤",title:"Le Maudit",holder:maudit[0]?.name||"–",stat:maudit[0]?.near||0,statl:"pronos à ±1 but du score exact",desc:"Si proche… mais si loin. La poisse incarnée.",color:"#f05252"},
-      pod("Classement · Le Maudit",maudit,p=>p.near+" près-ratés","#f05252")
+      {type:"badge",icon:"😤",title:"Le Maudit",holder:maudit[0]?.name||"–",stat:maudit[0]?.near||0,statl:"pronos ratés d'exactement 1 but (une seule équipe différente)",desc:"Si proche… mais si loin. La poisse incarnée.",color:"#f05252"},
+      pod("Classement · Le Maudit",maudit,p=>p.near,p=>p.near+" près-ratés","#f05252")
     ]},
     {icon:"🔮",label:"Le Devin",slides:[
       {type:"badge",icon:"🔮",title:"Le Devin",holder:devin[0]?.name||"–",stat:(devin[0]?.rate||0)+"%",statl:devin[0]?.exacts+" scores exacts",desc:"Voyant ou calculateur ? Les deux peut-être.",color:"#9b5de5"},
-      pod("Classement · Le Devin",devin,p=>p.rate+"% ("+p.exacts+" exacts)","#9b5de5")
+      pod("Classement · Le Devin",devin,p=>p.rate,p=>p.rate+"% ("+p.exacts+" exacts)","#9b5de5")
     ]},
     {icon:"🎲",label:"Baromètre",slides:[
       {type:"badge",icon:"🎲",title:"Baromètre du risque",holder:baro[0]?.name||"–",stat:baro[0]?.avg||0,statl:"cote moyenne jouée",desc:"Joue les plus grosses cotes, sans peur de rien.",color:"#f59e0b"},
-      pod("Classement · Baromètre",baro,p=>p.avg+" cote moy.","#f59e0b")
+      pod("Classement · Baromètre",baro,p=>p.avg,p=>p.avg+" cote moy.","#f59e0b")
     ]},
     {icon:"🐑",label:"Le Mouton",slides:[
       {type:"badge",icon:"🐑",title:"Le Mouton",holder:mouton[0]?.name||"–",stat:(mouton[0]?.rate||0)+"%",statl:"matchs pronos comme la majorité",desc:"Suit le troupeau… mais ça marche parfois !",color:"#4cc9f0"},
-      pod("Classement · Le Mouton",mouton,p=>p.rate+"% ("+p.count+" fois)","#4cc9f0")
+      pod("Classement · Le Mouton",mouton,p=>p.rate,p=>p.rate+"% ("+p.count+" fois)","#4cc9f0")
     ]},
     {icon:"🌟",label:"Nostradamus",slides:[
       {type:"badge",icon:"🌟",title:"Nostradamus",holder:nostra[0]?.name||"–",stat:nostra[0]?.pts||0,statl:"pts sur les matchs surprises (cote >80)",desc:"Maîtrise l'imprévisible. Roi des coups de poker.",color:"#f5c842"},
-      pod("Classement · Nostradamus",nostra,p=>p.pts+" pts surprise","#f5c842")
+      pod("Classement · Nostradamus",nostra,p=>p.pts,p=>p.pts+" pts surprise","#f5c842")
     ]},
-    {icon:"❤️",label:"Les Amoureux",slides:[{type:"relational",icon:"❤️",title:"Les Amoureux",pair:amoureux.pair||["–","–"],stat:amoureux.count,statl:"pronostics identiques sur "+amoureux.total+" matchs",desc:"Ces deux-là pensent exactement pareil. Soulmates des pronos.",color:"#f72585"}]},
+    {icon:"❤️",label:"Les Amoureux",slides:[{type:"relational",icon:"❤️",title:"Les Amoureux",pair:amoureux.pair||["–","–"],stat:amoureux.count,statl:"pronostics identiques sur "+amoureux.total+" matchs",desc:"Jouent exactement le même score, but pour but. Pas juste le bon résultat — le score identique.",color:"#f72585"}]},
     {icon:"⚔️",label:"Les Rivaux",slides:[{type:"relational",icon:"⚔️",title:"Les Rivaux",pair:rivaux.pair||["–","–"],stat:rivaux.count,statl:"désaccords sur le résultat ("+rivaux.total+" matchs)",desc:"Ils ne sont jamais d'accord. L'un dit 1, l'autre dit 2.",color:"#f05252"}]},
-    {icon:"👯",label:"Les Jumeaux",slides:[{type:"relational",icon:"👯",title:"Les Jumeaux",pair:jumeaux.pair||["–","–"],stat:jumeaux.same,statl:"même résultat pronostiqué sur "+jumeaux.total+" matchs",desc:"Même vision du jeu, exécution différente. Deux cerveaux, un seul logiciel.",color:"#4cc9f0"}]},
+    {icon:"👯",label:"Les Jumeaux",slides:[{type:"relational",icon:"👯",title:"Les Jumeaux",pair:jumeaux.pair||["–","–"],stat:jumeaux.same,statl:"même résultat pronostiqué sur "+jumeaux.total+" matchs",desc:"Voient toujours le même vainqueur… mais n'ont jamais le même score. Même direction, chiffres différents.",color:"#4cc9f0"}]},
     {icon:"📡",label:"Même Longueur d'Onde",slides:[{type:"relational",icon:"📡",title:"Même Longueur d'Onde",pair:longueurDonde.pair||["–","–"],stat:longueurDonde.corr>0?Math.round(longueurDonde.corr*100)+"%":"–",statl:"corrélation des courbes de points",desc:"Leurs classements évoluent en parfaite synchronie. Quand l'un monte, l'autre monte.",color:"#9b5de5"}]},
-    {icon:"🐕",label:"Idéfix",slides:[
-      {type:"badge",icon:"🐕",title:"Idéfix",holder:idefix[0]?.name||"–",stat:(idefix[0]?.rate||0)+"%",statl:"des pronos sur le favori ("+idefix[0]?.count+"/"+idefix[0]?.total+" matchs)",desc:"Suit ses favoris quoiqu'il arrive. Jamais de surprise, toujours la sécurité.",color:"#22c97a"},
-      pod("Classement · Idéfix",idefix,p=>p.rate+"% ("+p.count+"/"+p.total+")","#22c97a")
+    {icon:"🌿",label:"Groot",slides:[
+      {type:"badge",icon:"🌿",title:"Groot",holder:idefix[0]?.name||"–",stat:(idefix[0]?.rate||0)+"%",statl:"des pronos sur le favori ("+idefix[0]?.count+"/"+idefix[0]?.total+" matchs)",desc:"Son vocabulaire est limité, son imagination de pronostics aussi...",color:"#22c97a"},
+      pod("Classement · Groot",idefix,p=>p.rate,p=>p.rate+"% ("+p.count+"/"+p.total+")","#22c97a")
     ]},
     {icon:"🎪",label:"Le Club",slides:[{type:"club",icon:"🎪",title:"Le Club",group:leClub.group||["–","–","–"],stat:leClub.count,statl:"mêmes pronos sur "+leClub.total+" matchs",desc:"Ces trois-là ont un abonnement au cerveau collectif. Un vote, trois bulletins.",color:"#fb5607"}]},
     {icon:"😴",label:"Blitz",slides:[
       {type:"badge",icon:"😴",title:"Blitz",holder:blitz[0]?.name||"–",stat:blitz[0]?.count||0,statl:"pronos oubliés quand +60% avaient bon",desc:"A loupé les matchs que tout le monde allait réussir. L'art d'être absent au mauvais moment.",color:"#f59e0b"},
-      pod("Classement · Blitz",blitz,p=>p.count+" fois","#f59e0b")
+      pod("Classement · Blitz",blitz,p=>p.count,p=>p.count+" fois","#f59e0b")
     ]},
     {icon:"🤷",label:"Nonchalant",slides:[
       {type:"badge",icon:"🤷",title:"Nonchalant",holder:nonchalant[0]?.name||"–",stat:nonchalant[0]?.count||0,statl:"pronos oubliés quand personne n'avait bon",desc:"N'a pas pronostiqué… mais de toute façon tout le monde se plantait.",color:"#4cc9f0"},
-      pod("Classement · Nonchalant",nonchalant,p=>p.count+" fois","#4cc9f0")
+      pod("Classement · Nonchalant",nonchalant,p=>p.count,p=>p.count+" fois","#4cc9f0")
     ]},
-    {icon:"🎯",label:"Sniper ×2",slides:[
-      {type:"badge",icon:"🎯",title:"Sniper ×2",holder:sniperX2[0]?.used?sniperX2[0]?.name||"–":"–",stat:sniperX2[0]?.used?(sniperX2[0]?.rate||0)+"%":"–",statl:"scores exacts sur ses paris ×2 ("+(sniperX2[0]?.exacts||0)+" exacts)",desc:"Quand il double la mise, il vise le score exact. Précision chirurgicale.",color:"#8338ec"},
-      pod("Classement · Sniper ×2",sniperX2.filter(p=>p.used>0),p=>p.rate+"% ("+p.exacts+" exacts)","#8338ec")
-    ]},
-    {icon:"💥",label:"Double Or",slides:[
-      {type:"badge",icon:"💥",title:"Double Or",holder:doubleOr[0]?.used?doubleOr[0]?.name||"–":"–",stat:doubleOr[0]?.used?doubleOr[0]?.pts||0:"–",statl:"pts engrangés sur ses paris ×2",desc:"A transformé ses doublements en mines d'or. Le ×2 comme art de vivre.",color:"#f5c842"},
-      pod("Classement · Double Or",doubleOr.filter(p=>p.used>0),p=>p.pts+" pts ×2","#f5c842")
+    (()=>{const _s0=sniperX2.find(p=>p.used>0)||{};const _stied=sniperX2.filter(p=>p.used>0&&p.rate===_s0.rate&&p.exacts===_s0.exacts).map(p=>p.name).join(" & ")||"–";return {icon:"🎯",label:"Sniper ×2",slides:[
+      {type:"badge",icon:"🎯",title:"Sniper ×2",holder:_stied,stat:_s0.used?(_s0.rate||0)+"%":"–",statl:"scores exacts sur ses paris ×2 ("+(_s0.exacts||0)+" exacts)",desc:"Quand il double la mise, il vise le score exact. Précision chirurgicale.",color:"#8338ec"},
+      pod("Classement · Sniper ×2",sniperX2.filter(p=>p.used>0),p=>p.rate*100+p.exacts,p=>p.rate+"% ("+p.exacts+" exacts)","#8338ec")
+    ]};})(),
+    {icon:"💰",label:"Easy Money Sniper",slides:[
+      {type:"badge",icon:"💰",title:"Easy Money Sniper",holder:doubleOr[0]?.used?doubleOr[0]?.name||"–":"–",stat:doubleOr[0]?.used?doubleOr[0]?.pts||0:"–",statl:"pts engrangés sur ses paris ×2",desc:"A transformé ses doublements en mines d'or. Le ×2 comme art de vivre.",color:"#f5c842"},
+      pod("Classement · Easy Money Sniper",doubleOr.filter(p=>p.used>0),p=>p.pts,p=>p.pts+" pts ×2","#f5c842")
     ]},
     {icon:"💎",label:"La Mine d'Or",slides:[
       {type:"badge",icon:"💎",title:"La Mine d'Or",holder:rareteBonus[0]?.bonusPts>0?rareteBonus[0].name:"–",stat:rareteBonus[0]?.bonusPts||0,statl:"pts de bonus de rareté récoltés sur scores exacts",desc:"A tiré le maximum des bonus de rareté sur ses scores exacts. L'or se cache dans les détails.",color:"#f5c842"},
-      pod("Classement · Bonus Rareté",rareteBonus.filter(p=>p.bonusPts>0),p=>p.bonusPts+" pts rareté","#f5c842")
+      pod("Classement · Bonus Rareté",rareteBonus.filter(p=>p.bonusPts>0),p=>p.bonusPts,p=>p.bonusPts+" pts rareté","#f5c842")
     ]},
     {icon:"🪙",label:"La Pièce Jaune",slides:[
       {type:"badge",icon:"🪙",title:"La Pièce Jaune",holder:rareteMinArr[0]?.name||"–",stat:rareteMinArr[0]?.bonusPts||0,statl:"pts de bonus de rareté seulement",desc:"A trouvé des scores exacts… mais jamais sur les matchs les plus rares. Manque de bol !",color:"#cd7f32"},
-      pod("Classement · Moins de bonus rareté",rareteMinArr,p=>p.bonusPts+" pts rareté","#cd7f32")
+      pod("Classement · Moins de bonus rareté",rareteMinArr,p=>p.bonusPts,p=>p.bonusPts+" pts rareté","#cd7f32")
     ]},
     {icon:"🔬",label:"Le Chirurgien",slides:[
       {type:"badge",icon:"🔬",title:"Le Chirurgien",holder:chirurgien[0]?.rate>0?chirurgien[0].name:"–",stat:(chirurgien[0]?.rate||0)+"%",statl:"des bons pronos transformés en score exact ("+chirurgien[0]?.exacts+" ex. / "+chirurgien[0]?.goods+" bons)",desc:"Quand il voit juste sur le résultat, il voit souvent juste sur le score aussi. Précision absolue.",color:"#22c97a"},
-      pod("Classement · Le Chirurgien",chirurgien.filter(p=>p.rate>0),p=>p.rate+"% ("+p.exacts+"/"+p.goods+")","#22c97a")
+      pod("Classement · Le Chirurgien",chirurgien.filter(p=>p.rate>0),p=>p.rate*100+p.exacts,p=>p.rate+"% ("+p.exacts+"/"+p.goods+")","#22c97a")
     ]},
   ];
 }
@@ -1173,13 +1175,13 @@ function renderSlide() {
       '<div class="podcol"><div class="podname">'+(p3?.name||"–")+'</div><div class="podpts">'+(p3?.pts||0)+' pts</div><div class="podblk" style="width:68px;height:65px;background:var(--bronze)">3</div></div>'+
       '</div></div>';
   } else if (s.type==="podium-stat") {
-    const medals=["🥇","🥈","🥉","4e","5e"];
+    const rankEmoji=r=>r===1?"🥇":r===2?"🥈":r===3?"🥉":r+"e";
     html='<div class="bcrd" style="width:100%;max-width:320px">'+
       '<div class="btitle" style="font-size:15px;margin-bottom:14px">'+s.title+'</div>'+
       '<div style="display:flex;flex-direction:column;gap:7px;width:100%">'+
       (s.items||[]).map((item,i)=>
         '<div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.05);border-radius:10px;padding:9px 12px">'+
-          '<div style="font-size:17px;width:26px;text-align:center;flex-shrink:0">'+medals[i]+'</div>'+
+          '<div style="font-size:17px;width:26px;text-align:center;flex-shrink:0">'+rankEmoji(item.rank||i+1)+'</div>'+
           '<div style="width:32px;height:32px;border-radius:50%;background:'+item.col+'22;color:'+item.col+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:1.5px solid '+item.col+';flex-shrink:0">'+item.name.substring(0,2).toUpperCase()+'</div>'+
           '<div style="flex:1;font-size:13px;font-weight:600;color:var(--t1);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+item.name+'</div>'+
           '<div style="font-size:12px;color:'+s.color+';font-weight:700;flex-shrink:0">'+item.stat+'</div>'+
@@ -1238,18 +1240,21 @@ function renderSlide() {
   document.getElementById("scont").innerHTML = html;
 }
 
+let storyHoldTimer=null,storyWasHeld=false;
 function startTimer() {
   clearInterval(storyData.timer);
   const seg = document.getElementById("seg"+storyData.idx);
   if (!seg) return;
-  let w=0;
+  let w = parseFloat(seg.style.width)||0;
   storyData.timer = setInterval(() => {
-    w+=2; seg.style.width=Math.min(w,100)+"%";
+    w+=1; seg.style.width=Math.min(w,100)+"%";
     if (w>=100){clearInterval(storyData.timer);storyNext();}
   },100);
 }
-function storyNext(){clearInterval(storyData.timer);if(storyData.idx<storyData.slides.length-1){storyData.idx++;renderSlide();startTimer();}else closeStory();}
-function storyPrev(){clearInterval(storyData.timer);if(storyData.idx>0){storyData.idx--;renderSlide();startTimer();}}
+function storyHoldStart(){storyWasHeld=false;storyHoldTimer=setTimeout(()=>{storyWasHeld=true;clearInterval(storyData.timer);},180);}
+function storyHoldEnd(){clearTimeout(storyHoldTimer);if(storyWasHeld)startTimer();}
+function storyNext(){if(storyWasHeld){storyWasHeld=false;return;}clearInterval(storyData.timer);if(storyData.idx<storyData.slides.length-1){storyData.idx++;renderSlide();startTimer();}else closeStory();}
+function storyPrev(){if(storyWasHeld){storyWasHeld=false;return;}clearInterval(storyData.timer);if(storyData.idx>0){storyData.idx--;renderSlide();startTimer();}}
 function closeStory(){clearInterval(storyData.timer);document.getElementById("sov").classList.remove("on");}
 
 // ── Stats ──
@@ -1723,7 +1728,7 @@ function buildPlayerProfile(pName) {
     total += pts;
     const isGood = Math.sign(rH-rA) === Math.sign(pH-pA);
     const isExact = pH===rH && pA===rA;
-    const isNear = !isExact && Math.abs(pH-rH)<=1 && Math.abs(pA-rA)<=1;
+    const isNear = Math.abs(pH-rH)+Math.abs(pA-rA)===1;
     if (isExact) exacts++;
     if (isGood) { goods++; curStreak++; maxStreak = Math.max(maxStreak, curStreak); } else curStreak = 0;
     if (isNear) nearMiss++;
@@ -1822,7 +1827,7 @@ function buildPlayerProfile(pName) {
   phrases.push({ico:"✨", txt: "Scores exacts : <b>"+exacts+"</b> en "+coteCount+" pronos — soit <b>"+exactRate+"%</b>"});
   phrases.push({ico:"📊", txt: "Cote moyenne jouée : <b>"+avgCote+" pts</b> — tu joues "+(avgCote>=80?"les surprises":"les favoris")});
   phrases.push({ico:"🏆", txt: "Meilleur match : <em>"+(bestMatch||"–")+"</em>"});
-  if (nearMiss > 0) phrases.push({ico:"😤", txt: "<b>"+nearMiss+"</b> prono"+(nearMiss>1?"s":"")+" raté"+(nearMiss>1?"s":"")+" à ±1 but — ton match maudit : "+(worstMatch||"–")});
+  if (nearMiss > 0) phrases.push({ico:"😤", txt: "<b>"+nearMiss+"</b> prono"+(nearMiss>1?"s":"")+" raté"+(nearMiss>1?"s":"")+" d'exactement 1 but (les deux équipes) — match maudit : "+(worstMatch||"–")});
   phrases.push({ico:"🔥", txt: "Meilleure série : <b>"+maxStreak+" bon"+(maxStreak>1?"s":"")+" résultat"+(maxStreak>1?"s":"")+" d'affilée</b>"});
   phrases.push({ico:"📈", txt: "<b>"+favRate+"%</b> de tes pronos misent sur le favori (cote < 80)"});
   if (drawPronos > 0) phrases.push({ico:"🤝", txt: "Tu as pronostiqué <b>"+drawPronos+" nul"+(drawPronos>1?"s":"")+"</b> — "+drawCorrect+" correct"+(drawCorrect>1?"s":"")+" ("+drawRate+"%)"});
