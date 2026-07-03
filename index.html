@@ -68,8 +68,31 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
 .sav{width:30px;height:30px;border-radius:50%;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:13px}
 .scls{margin-left:auto;font-size:22px;color:#fff;cursor:pointer;background:none;border:none;line-height:1}
 .scont{flex:1;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
-.stl{position:absolute;left:0;top:80px;bottom:0;width:35%;cursor:pointer}
-.str{position:absolute;right:0;top:80px;bottom:0;width:35%;cursor:pointer}
+.stl{position:absolute;left:0;top:80px;bottom:0;width:35%;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none}
+.str{position:absolute;right:0;top:80px;bottom:0;width:35%;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none}
+.stl::after,.str::after{content:"";position:absolute;inset:0;opacity:0;transition:opacity .18s ease;pointer-events:none}
+.stl::after{background:radial-gradient(ellipse at 15% 50%, rgba(200,200,200,0.15) 0%, transparent 70%)}
+.str::after{background:radial-gradient(ellipse at 85% 50%, rgba(200,200,200,0.15) 0%, transparent 70%)}
+.stl:active::after,.str:active::after{opacity:1}
+/* ── Player Focus Picker ── */
+.pp-overlay{position:fixed;inset:0;z-index:300;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;align-items:center;padding:20px}
+.pp-overlay.hidden{display:none}
+.pp-inner{width:100%;max-width:380px;text-align:center;margin:auto;padding:12px 0}
+.pp-emoji{font-size:44px;margin-bottom:10px;line-height:1}
+.pp-title{font-size:22px;font-weight:800;margin-bottom:4px}
+.pp-sub{font-size:12px;color:var(--t3);margin-bottom:18px;line-height:1.5;max-width:260px;margin-left:auto;margin-right:auto}
+.pp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.pp-card{padding:10px 8px;background:var(--s1);border-radius:var(--r);border:1.5px solid var(--br);cursor:pointer;transition:border-color .15s,background .15s;text-align:center;-webkit-tap-highlight-color:transparent}
+.pp-card:active{background:var(--s2)}
+.pp-card.focused{border-color:var(--ac);background:rgba(61,142,240,.06)}
+.pp-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin:0 auto 6px}
+.pp-name{font-size:12px;font-weight:600;color:var(--t1)}
+.pp-skip{font-size:12px;color:var(--t3);text-decoration:underline;cursor:pointer;background:none;border:none;padding:4px 8px;-webkit-tap-highlight-color:transparent}
+/* Focus avatar button */
+.focus-btn{display:none;align-items:center;gap:6px;background:var(--s2);padding:4px 10px 4px 5px;border-radius:20px;border:.5px solid var(--br2);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s}
+.focus-btn:active{background:var(--s3)}
+.focus-btn-av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.focus-btn-name{font-size:12px;font-weight:600;color:var(--t1)}
 .bcrd{background:linear-gradient(135deg,var(--s2),var(--s3));border-radius:var(--r);padding:24px 20px;text-align:center;width:100%;max-width:320px}
 .bico{font-size:52px;margin-bottom:10px;display:block}
 .btitle{font-size:19px;font-weight:800;margin-bottom:4px}
@@ -203,12 +226,20 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
   <div class="screen active" id="s-rank">
     <div class="ph">
       <div><div class="ptitle">Classement</div><div class="psub" id="rank-sub">Chargement…</div></div>
-      <div id="sync-dot" style="width:8px;height:8px;border-radius:50%;background:var(--t3)"></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="focus-btn" id="focus-btn" onclick="showPlayerPicker()">
+          <div class="focus-btn-av" id="focus-btn-av"></div>
+          <span class="focus-btn-name" id="focus-btn-name"></span>
+        </div>
+        <div id="sync-dot" style="width:8px;height:8px;border-radius:50%;background:var(--t3)"></div>
+      </div>
     </div>
     <div id="rank-list"></div>
     <div class="rank-chart-wrap">
       <div class="rank-chart-title">Évolution des points</div>
-      <canvas id="rank-chart" style="width:100%;height:220px;max-height:220px;display:block"></canvas>
+      <div style="position:relative;height:min(300px,42vh)">
+        <canvas id="rank-chart"></canvas>
+      </div>
     </div>
   </div>
 
@@ -315,6 +346,17 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
 
 <div class="notif" id="notif"></div>
 
+<!-- Player Focus Picker -->
+<div class="pp-overlay hidden" id="pp-overlay">
+  <div class="pp-inner">
+    <div class="pp-emoji">⚽</div>
+    <div class="pp-title">Qui es-tu ?</div>
+    <div class="pp-sub">Choisis ton pseudo pour personnaliser l'appli et retrouver tes stats facilement.</div>
+    <div class="pp-grid" id="pp-grid"></div>
+    <button class="pp-skip" onclick="dismissPicker(false)">Continuer sans choisir</button>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
 const SB_URL = "https://owoycuewdxqdgvufmsdq.supabase.co";
@@ -418,6 +460,50 @@ let compareMode = false;
 let compareSel = new Set();
 let charts = [];
 let storyData = {idx:0,slides:[],timer:null};
+let focusPlayer = localStorage.getItem("mpp2026_focus") || null;
+
+// ── Player Focus Picker ──
+function showPlayerPicker() {
+  const overlay = document.getElementById("pp-overlay");
+  const grid = document.getElementById("pp-grid");
+  overlay.classList.remove("hidden");
+  grid.innerHTML = state.players.map((p, i) => {
+    const col = COLORS[i % COLORS.length];
+    const ini = p.name.substring(0, 2).toUpperCase();
+    const isFocused = focusPlayer === p.name;
+    return '<div class="pp-card'+(isFocused?' focused':'')+'" onclick="selectFocusPlayer(\''+p.name.replace(/'/g,"\\'")+'\')">' +
+      '<div class="pp-av" style="background:'+col+'22;color:'+col+';border:1.5px solid '+col+'">'+ini+'</div>' +
+      '<div class="pp-name">'+p.name+'</div>' +
+      '</div>';
+  }).join("");
+}
+
+function selectFocusPlayer(name) {
+  focusPlayer = name;
+  localStorage.setItem("mpp2026_focus", name);
+  dismissPicker(true);
+}
+
+function dismissPicker(selected) {
+  document.getElementById("pp-overlay").classList.add("hidden");
+  if (selected || focusPlayer) {
+    renderFocusBtn();
+    renderRanking();
+  }
+}
+
+function renderFocusBtn() {
+  const btn = document.getElementById("focus-btn");
+  if (!focusPlayer || !state.players.length) { btn.style.display = "none"; return; }
+  const idx = state.players.findIndex(p => p.name === focusPlayer);
+  if (idx < 0) { btn.style.display = "none"; return; }
+  const col = COLORS[idx % COLORS.length];
+  const ini = focusPlayer.substring(0, 2).toUpperCase();
+  document.getElementById("focus-btn-av").style.cssText = "width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;background:"+col+"22;color:"+col+";border:1.5px solid "+col;
+  document.getElementById("focus-btn-av").textContent = ini;
+  document.getElementById("focus-btn-name").textContent = focusPlayer;
+  btn.style.display = "flex";
+}
 
 // ── Supabase ──
 async function loadData() {
@@ -654,14 +740,16 @@ function renderRanking() {
   document.getElementById("rank-sub").textContent = ranked.length + " joueurs · " + matchIds.length + " matchs";
   const medals = ["🥇","🥈","🥉"];
 
+  const isFocused = p => focusPlayer ? p.name === focusPlayer : p.isMe;
   document.getElementById("rank-list").innerHTML =
     '<div style="background:var(--s1);border-radius:var(--r);margin:0 16px;overflow:hidden">' +
     ranked.map((p,i) => {
       const ini = p.name.substring(0,2).toUpperCase();
-      return '<div class="ri'+(p.isMe?" me":"")+'">' +
+      const focused = isFocused(p);
+      return '<div class="ri'+(focused?" me":"")+'">' +
         '<div class="rn" style="color:'+(i<3?["var(--gold)","var(--silver)","var(--bronze)"][i]:"var(--t3)")+'">'+(medals[i]||(i+1))+'</div>'+
         '<div class="rav" style="background:'+p.col+'22;color:'+p.col+'">'+ini+'</div>'+
-        '<div class="rinfo"><div class="rname">'+p.name+(p.isMe?' <span style="color:var(--ac);font-size:10px">●</span>':'')+'</div>'+
+        '<div class="rinfo"><div class="rname">'+p.name+(focused?' <span style="color:var(--ac);font-size:10px">●</span>':'')+'</div>'+
         '<div class="rsub">'+p.exacts+' exact'+(p.exacts!==1?"s":"")+'</div></div>'+
         '<div class="rpts">'+p.pts+'</div>'+
         '<div class="rbar"><div class="rbf" style="width:'+Math.round(p.pts/max*100)+'%;background:'+p.col+'"></div></div>'+
@@ -994,35 +1082,37 @@ function computeAllBadges() {
   const pCol=name=>{const i=state.players.findIndex(p=>p.name===name);return i>=0?COLORS[i%COLORS.length]:"#888";};
   const top=(arr,valFn,fmt,n=5)=>{const res=[];let lastVal=undefined,lastRank=0;for(let i=0;i<arr.length;i++){const v=valFn(arr[i]);if(v!==lastVal){lastRank=i+1;lastVal=v;}if(lastRank>n)break;res.push({name:arr[i].name,stat:fmt(arr[i]),col:pCol(arr[i].name),rank:lastRank});}return res;};
   const pod=(title,arr,valFn,fmt,color)=>({type:"podium-stat",title,items:top(arr,valFn,fmt),color});
+  // Helper: retourne tous les joueurs ex-aequo au sommet (joined " & "), ou "–" si cond échoue
+  const tie=(arr,valFn,cond)=>{if(!arr.length)return"–";const a0=arr[0];if(cond&&!cond(a0))return"–";const v0=valFn(a0);return arr.filter(p=>valFn(p)===v0).map(p=>p.name).join(" & ")||"–";};
 
   return [
     {icon:"🏆",label:"Podium",slides:[{type:"podium",data:pl.slice(0,3)}]},
     {icon:"🏟️",label:"Boss des Poules",slides:[
-      {type:"badge",icon:"🏟️",title:"Boss des Poules",holder:bossPoules[0]?.name||"–",stat:bossPoules[0]?.pts||0,statl:"pts en phase de groupes",desc:"A dominé la phase de poules de bout en bout. Roi des groupes.",color:"#e65c35"},
+      {type:"badge",icon:"🏟️",title:"Boss des Poules",holder:tie(bossPoules,p=>p.pts),stat:bossPoules[0]?.pts||0,statl:"pts en phase de groupes",desc:"A dominé la phase de poules de bout en bout. Roi des groupes.",color:"#e65c35"},
       pod("Classement · Phase de groupes",bossPoules,p=>p.pts,p=>p.pts+" pts","#e65c35")
     ]},
     {icon:"⚡",label:"Boss Final",slides:[
-      {type:"badge",icon:"⚡",title:"Boss Final",holder:bossFinal[0]?.pts>0?bossFinal[0]?.name||"–":"–",stat:bossFinal[0]?.pts||0,statl:"pts en phase à élimination directe",desc:"Réservé au vrai champion. Brille quand les enjeux sont au maximum.",color:"#f72585"},
+      {type:"badge",icon:"⚡",title:"Boss Final",holder:tie(bossFinal,p=>p.pts,p=>p.pts>0),stat:bossFinal[0]?.pts||0,statl:"pts en phase à élimination directe",desc:"Réservé au vrai champion. Brille quand les enjeux sont au maximum.",color:"#f72585"},
       pod("Classement · Phase finale",bossFinal.filter(p=>p.pts>0),p=>p.pts,p=>p.pts+" pts","#f72585")
     ]},
     {icon:"😤",label:"Le Maudit",slides:[
-      {type:"badge",icon:"😤",title:"Le Maudit",holder:maudit[0]?.name||"–",stat:maudit[0]?.near||0,statl:"pronos ratés d'exactement 1 but (une seule équipe différente)",desc:"Si proche… mais si loin. La poisse incarnée.",color:"#f05252"},
+      {type:"badge",icon:"😤",title:"Le Maudit",holder:tie(maudit,p=>p.near),stat:maudit[0]?.near||0,statl:"pronos ratés d'exactement 1 but (une seule équipe différente)",desc:"Si proche… mais si loin. La poisse incarnée.",color:"#f05252"},
       pod("Classement · Le Maudit",maudit,p=>p.near,p=>p.near+" près-ratés","#f05252")
     ]},
     {icon:"🔮",label:"Le Devin",slides:[
-      {type:"badge",icon:"🔮",title:"Le Devin",holder:devin[0]?.name||"–",stat:(devin[0]?.rate||0)+"%",statl:devin[0]?.exacts+" scores exacts",desc:"Voyant ou calculateur ? Les deux peut-être.",color:"#9b5de5"},
+      {type:"badge",icon:"🔮",title:"Le Devin",holder:tie(devin,p=>p.rate),stat:(devin[0]?.rate||0)+"%",statl:devin[0]?.exacts+" scores exacts",desc:"Voyant ou calculateur ? Les deux peut-être.",color:"#9b5de5"},
       pod("Classement · Le Devin",devin,p=>p.rate,p=>p.rate+"% ("+p.exacts+" exacts)","#9b5de5")
     ]},
     {icon:"🎲",label:"Baromètre",slides:[
-      {type:"badge",icon:"🎲",title:"Baromètre du risque",holder:baro[0]?.name||"–",stat:baro[0]?.avg||0,statl:"cote moyenne jouée",desc:"Joue les plus grosses cotes, sans peur de rien.",color:"#f59e0b"},
+      {type:"badge",icon:"🎲",title:"Baromètre du risque",holder:tie(baro,p=>p.avg),stat:baro[0]?.avg||0,statl:"cote moyenne jouée",desc:"Joue les plus grosses cotes, sans peur de rien.",color:"#f59e0b"},
       pod("Classement · Baromètre",baro,p=>p.avg,p=>p.avg+" cote moy.","#f59e0b")
     ]},
     {icon:"🐑",label:"Le Mouton",slides:[
-      {type:"badge",icon:"🐑",title:"Le Mouton",holder:mouton[0]?.name||"–",stat:(mouton[0]?.rate||0)+"%",statl:"matchs pronos comme la majorité",desc:"Suit le troupeau… mais ça marche parfois !",color:"#4cc9f0"},
+      {type:"badge",icon:"🐑",title:"Le Mouton",holder:tie(mouton,p=>p.rate),stat:(mouton[0]?.rate||0)+"%",statl:"matchs pronos comme la majorité",desc:"Suit le troupeau… mais ça marche parfois !",color:"#4cc9f0"},
       pod("Classement · Le Mouton",mouton,p=>p.rate,p=>p.rate+"% ("+p.count+" fois)","#4cc9f0")
     ]},
     {icon:"🌟",label:"Nostradamus",slides:[
-      {type:"badge",icon:"🌟",title:"Nostradamus",holder:nostra[0]?.name||"–",stat:nostra[0]?.pts||0,statl:"pts sur les matchs surprises (cote >80)",desc:"Maîtrise l'imprévisible. Roi des coups de poker.",color:"#f5c842"},
+      {type:"badge",icon:"🌟",title:"Nostradamus",holder:tie(nostra,p=>p.pts),stat:nostra[0]?.pts||0,statl:"pts sur les matchs surprises (cote >80)",desc:"Maîtrise l'imprévisible. Roi des coups de poker.",color:"#f5c842"},
       pod("Classement · Nostradamus",nostra,p=>p.pts,p=>p.pts+" pts surprise","#f5c842")
     ]},
     {icon:"❤️",label:"Les Amoureux",slides:[{type:"relational",icon:"❤️",title:"Les Amoureux",pair:amoureux.pair||["–","–"],stat:amoureux.count,statl:"pronostics identiques sur "+amoureux.total+" matchs",desc:"Jouent exactement le même score, but pour but. Pas juste le bon résultat — le score identique.",color:"#f72585"}]},
@@ -1030,36 +1120,36 @@ function computeAllBadges() {
     {icon:"👯",label:"Les Jumeaux",slides:[{type:"relational",icon:"👯",title:"Les Jumeaux",pair:jumeaux.pair||["–","–"],stat:jumeaux.same,statl:"même résultat pronostiqué sur "+jumeaux.total+" matchs",desc:"Voient toujours le même vainqueur… mais n'ont jamais le même score. Même direction, chiffres différents.",color:"#4cc9f0"}]},
     {icon:"📡",label:"Même Longueur d'Onde",slides:[{type:"relational",icon:"📡",title:"Même Longueur d'Onde",pair:longueurDonde.pair||["–","–"],stat:longueurDonde.corr>0?Math.round(longueurDonde.corr*100)+"%":"–",statl:"corrélation des courbes de points",desc:"Leurs classements évoluent en parfaite synchronie. Quand l'un monte, l'autre monte.",color:"#9b5de5"}]},
     {icon:"🌿",label:"Groot",slides:[
-      {type:"badge",icon:"🌿",title:"Groot",holder:idefix[0]?.name||"–",stat:(idefix[0]?.rate||0)+"%",statl:"des pronos sur le favori ("+idefix[0]?.count+"/"+idefix[0]?.total+" matchs)",desc:"Son vocabulaire est limité, son imagination de pronostics aussi...",color:"#22c97a"},
+      {type:"badge",icon:"🌿",title:"Groot",holder:tie(idefix,p=>p.rate),stat:(idefix[0]?.rate||0)+"%",statl:"des pronos sur le favori ("+idefix[0]?.count+"/"+idefix[0]?.total+" matchs)",desc:"Son vocabulaire est limité, son imagination de pronostics aussi...",color:"#22c97a"},
       pod("Classement · Groot",idefix,p=>p.rate,p=>p.rate+"% ("+p.count+"/"+p.total+")","#22c97a")
     ]},
     {icon:"🎪",label:"Le Club",slides:[{type:"club",icon:"🎪",title:"Le Club",group:leClub.group||["–","–","–"],stat:leClub.count,statl:"mêmes pronos sur "+leClub.total+" matchs",desc:"Ces trois-là ont un abonnement au cerveau collectif. Un vote, trois bulletins.",color:"#fb5607"}]},
     {icon:"😴",label:"Blitz",slides:[
-      {type:"badge",icon:"😴",title:"Blitz",holder:blitz[0]?.name||"–",stat:blitz[0]?.count||0,statl:"pronos oubliés quand +60% avaient bon",desc:"A loupé les matchs que tout le monde allait réussir. L'art d'être absent au mauvais moment.",color:"#f59e0b"},
+      {type:"badge",icon:"😴",title:"Blitz",holder:tie(blitz,p=>p.count),stat:blitz[0]?.count||0,statl:"pronos oubliés quand +60% avaient bon",desc:"A loupé les matchs que tout le monde allait réussir. L'art d'être absent au mauvais moment.",color:"#f59e0b"},
       pod("Classement · Blitz",blitz,p=>p.count,p=>p.count+" fois","#f59e0b")
     ]},
     {icon:"🤷",label:"Nonchalant",slides:[
-      {type:"badge",icon:"🤷",title:"Nonchalant",holder:nonchalant[0]?.name||"–",stat:nonchalant[0]?.count||0,statl:"pronos oubliés quand personne n'avait bon",desc:"N'a pas pronostiqué… mais de toute façon tout le monde se plantait.",color:"#4cc9f0"},
+      {type:"badge",icon:"🤷",title:"Nonchalant",holder:tie(nonchalant,p=>p.count),stat:nonchalant[0]?.count||0,statl:"pronos oubliés quand personne n'avait bon",desc:"N'a pas pronostiqué… mais de toute façon tout le monde se plantait.",color:"#4cc9f0"},
       pod("Classement · Nonchalant",nonchalant,p=>p.count,p=>p.count+" fois","#4cc9f0")
     ]},
-    (()=>{const _s0=sniperX2.find(p=>p.used>0)||{};const _stied=sniperX2.filter(p=>p.used>0&&p.rate===_s0.rate&&p.exacts===_s0.exacts).map(p=>p.name).join(" & ")||"–";return {icon:"🎯",label:"Sniper ×2",slides:[
+    (()=>{const _s0=sniperX2.find(p=>p.used>0)||{};const _stied=tie(sniperX2.filter(p=>p.used>0),p=>p.rate*100+p.exacts);return {icon:"🎯",label:"Sniper ×2",slides:[
       {type:"badge",icon:"🎯",title:"Sniper ×2",holder:_stied,stat:_s0.used?(_s0.rate||0)+"%":"–",statl:"scores exacts sur ses paris ×2 ("+(_s0.exacts||0)+" exacts)",desc:"Quand il double la mise, il vise le score exact. Précision chirurgicale.",color:"#8338ec"},
       pod("Classement · Sniper ×2",sniperX2.filter(p=>p.used>0),p=>p.rate*100+p.exacts,p=>p.rate+"% ("+p.exacts+" exacts)","#8338ec")
     ]};})(),
-    {icon:"💰",label:"Easy Money Sniper",slides:[
-      {type:"badge",icon:"💰",title:"Easy Money Sniper",holder:doubleOr[0]?.used?doubleOr[0]?.name||"–":"–",stat:doubleOr[0]?.used?doubleOr[0]?.pts||0:"–",statl:"pts engrangés sur ses paris ×2",desc:"A transformé ses doublements en mines d'or. Le ×2 comme art de vivre.",color:"#f5c842"},
+    (()=>{const _d0=doubleOr.find(p=>p.used>0)||{};const _dtied=tie(doubleOr.filter(p=>p.used>0),p=>p.pts);return {icon:"💰",label:"Easy Money Sniper",slides:[
+      {type:"badge",icon:"💰",title:"Easy Money Sniper",holder:_dtied,stat:_d0.used?_d0.pts||0:"–",statl:"pts engrangés sur ses paris ×2",desc:"A transformé ses doublements en mines d'or. Le ×2 comme art de vivre.",color:"#f5c842"},
       pod("Classement · Easy Money Sniper",doubleOr.filter(p=>p.used>0),p=>p.pts,p=>p.pts+" pts ×2","#f5c842")
-    ]},
+    ]};})(),
     {icon:"💎",label:"La Mine d'Or",slides:[
-      {type:"badge",icon:"💎",title:"La Mine d'Or",holder:rareteBonus[0]?.bonusPts>0?rareteBonus[0].name:"–",stat:rareteBonus[0]?.bonusPts||0,statl:"pts de bonus de rareté récoltés sur scores exacts",desc:"A tiré le maximum des bonus de rareté sur ses scores exacts. L'or se cache dans les détails.",color:"#f5c842"},
+      {type:"badge",icon:"💎",title:"La Mine d'Or",holder:tie(rareteBonus,p=>p.bonusPts,p=>p.bonusPts>0),stat:rareteBonus[0]?.bonusPts||0,statl:"pts de bonus de rareté récoltés sur scores exacts",desc:"A tiré le maximum des bonus de rareté sur ses scores exacts. L'or se cache dans les détails.",color:"#f5c842"},
       pod("Classement · Bonus Rareté",rareteBonus.filter(p=>p.bonusPts>0),p=>p.bonusPts,p=>p.bonusPts+" pts rareté","#f5c842")
     ]},
     {icon:"🪙",label:"La Pièce Jaune",slides:[
-      {type:"badge",icon:"🪙",title:"La Pièce Jaune",holder:rareteMinArr[0]?.name||"–",stat:rareteMinArr[0]?.bonusPts||0,statl:"pts de bonus de rareté seulement",desc:"A trouvé des scores exacts… mais jamais sur les matchs les plus rares. Manque de bol !",color:"#cd7f32"},
+      {type:"badge",icon:"🪙",title:"La Pièce Jaune",holder:tie(rareteMinArr,p=>p.bonusPts),stat:rareteMinArr[0]?.bonusPts||0,statl:"pts de bonus de rareté seulement",desc:"A trouvé des scores exacts… mais jamais sur les matchs les plus rares. Manque de bol !",color:"#cd7f32"},
       pod("Classement · Moins de bonus rareté",rareteMinArr,p=>p.bonusPts,p=>p.bonusPts+" pts rareté","#cd7f32")
     ]},
     {icon:"🔬",label:"Le Chirurgien",slides:[
-      {type:"badge",icon:"🔬",title:"Le Chirurgien",holder:chirurgien[0]?.rate>0?chirurgien[0].name:"–",stat:(chirurgien[0]?.rate||0)+"%",statl:"des bons pronos transformés en score exact ("+chirurgien[0]?.exacts+" ex. / "+chirurgien[0]?.goods+" bons)",desc:"Quand il voit juste sur le résultat, il voit souvent juste sur le score aussi. Précision absolue.",color:"#22c97a"},
+      {type:"badge",icon:"🔬",title:"Le Chirurgien",holder:tie(chirurgien,p=>p.rate*100+p.exacts,p=>p.rate>0),stat:(chirurgien[0]?.rate||0)+"%",statl:"des bons pronos transformés en score exact ("+chirurgien[0]?.exacts+" ex. / "+chirurgien[0]?.goods+" bons)",desc:"Quand il voit juste sur le résultat, il voit souvent juste sur le score aussi. Précision absolue.",color:"#22c97a"},
       pod("Classement · Le Chirurgien",chirurgien.filter(p=>p.rate>0),p=>p.rate*100+p.exacts,p=>p.rate+"% ("+p.exacts+"/"+p.goods+")","#22c97a")
     ]},
   ];
@@ -1626,47 +1716,59 @@ function renderRankChart() {
   const el = document.getElementById("rank-chart");
   if (!el || !state.players.length) return;
   if (rankChart) { rankChart.destroy(); rankChart = null; }
-  el.height = 220;
 
-  // Dates uniques avec matchs joués
-  const doneByDate = {};
-  Object.keys(state.matchData).forEach(id => {
+  // Milestone stages in order
+  const stages = [
+    {key:"J1",   label:"J1",     ids: MATCHES.filter(m=>m.round===1).map(m=>m.id)},
+    {key:"J2",   label:"J2",     ids: MATCHES.filter(m=>m.round===2).map(m=>m.id)},
+    {key:"J3",   label:"J3",     ids: MATCHES.filter(m=>m.round===3).map(m=>m.id)},
+    {key:"32",   label:"1/32",   ids: KNOCKOUT_MATCHES.filter(m=>m.phase==="32").map(m=>m.id)},
+    {key:"16",   label:"1/16",   ids: KNOCKOUT_MATCHES.filter(m=>m.phase==="16").map(m=>m.id)},
+    {key:"QF",   label:"Quarts", ids: KNOCKOUT_MATCHES.filter(m=>m.phase==="QF").map(m=>m.id)},
+    {key:"SF",   label:"Demis",  ids: KNOCKOUT_MATCHES.filter(m=>m.phase==="SF").map(m=>m.id)},
+    {key:"3rd",  label:"3e pl.", ids: KNOCKOUT_MATCHES.filter(m=>m.phase==="3rd").map(m=>m.id)},
+    {key:"F",    label:"Finale", ids: KNOCKOUT_MATCHES.filter(m=>m.phase==="F").map(m=>m.id)},
+  ];
+
+  // Only keep stages that have at least one scored match
+  const scored = new Set(Object.keys(state.matchData).filter(id => {
     const d = state.matchData[id];
-    if (!d || d.scoreHome === undefined || d.scoreHome === "") return;
-    const m = ALL_MATCHES.find(x => x.id == id);
-    if (!m) return;
-    if (!doneByDate[m.date]) doneByDate[m.date] = [];
-    doneByDate[m.date].push(parseInt(id));
-  });
-  const dates = Object.keys(doneByDate).sort();
-  if (!dates.length) return;
+    return d && d.scoreHome !== undefined && d.scoreHome !== "";
+  }).map(Number));
+
+  const active = stages.filter(s => s.ids.some(id => scored.has(id)));
+  if (!active.length) return;
+
+  const isFoc = p => focusPlayer ? p.name === focusPlayer : p.isMe;
 
   const datasets = state.players.map((p, i) => {
     let cumul = 0;
-    const data = dates.map(dt => {
-      doneByDate[dt].forEach(id => {
+    const data = active.map(s => {
+      s.ids.forEach(id => {
+        if (!scored.has(id)) return;
         const d = state.matchData[id] || {};
         const pr = (d.pronos || {})[p.name] || {};
         cumul += computePts(id, p.name, d, pr);
       });
       return cumul;
     });
+    const focused = isFoc(p);
     return {
       label: p.name,
       data,
       borderColor: COLORS[i % COLORS.length],
       backgroundColor: "transparent",
-      tension: 0.35,
-      pointRadius: 4,
-      pointHoverRadius: 7,
-      borderWidth: p.isMe ? 3 : 1.5,
+      tension: 0.3,
+      pointRadius: focused ? 6 : 3,
+      pointHoverRadius: 8,
+      borderWidth: focused ? 3 : 1.5,
+      order: focused ? 0 : 1,
     };
   });
 
-  const fmt = d => new Date(d).toLocaleDateString("fr-FR", {day:"numeric", month:"short"});
   rankChart = new Chart(el.getContext("2d"), {
     type: "line",
-    data: { labels: dates.map(fmt), datasets },
+    data: { labels: active.map(s => s.label), datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -1691,7 +1793,7 @@ function renderRankChart() {
         }
       },
       scales: {
-        x: { ticks: { color: "#555", font: { size: 9 } }, grid: { color: "rgba(255,255,255,.04)" } },
+        x: { ticks: { color: "#666", font: { size: 10 } }, grid: { color: "rgba(255,255,255,.04)" } },
         y: { ticks: { color: "#555", font: { size: 10 } }, grid: { color: "rgba(255,255,255,.06)" }, beginAtZero: true }
       }
     }
@@ -1841,9 +1943,12 @@ function renderProfil() {
   // Selector
   document.getElementById("prof-sel").innerHTML = state.players.map((p,i) =>
     '<div class="psel'+(currentProfil===p.name?" on":"")+'" onclick="selectProfil(\'' + p.name.replace(/'/g,"\\'") + '\')">' +
-    (p.isMe?"★ ":"")+p.name+'</div>'
+    (p.isMe||p.name===focusPlayer?"★ ":"")+p.name+'</div>'
   ).join("");
-  if (!currentProfil) currentProfil = (state.players.find(p=>p.isMe)||state.players[0]).name;
+  if (!currentProfil) {
+    const fp = focusPlayer && state.players.find(p=>p.name===focusPlayer);
+    currentProfil = fp ? focusPlayer : (state.players.find(p=>p.isMe)||state.players[0])?.name;
+  }
   renderProfilCard(currentProfil);
 }
 
@@ -1975,7 +2080,12 @@ function renderProfilCard(pName) {
 (async()=>{
   await loadData();
   renderRanking();
+  renderFocusBtn();
   setTimeout(renderRankChart, 100);
+  // Show player picker on first visit (no focus player saved)
+  if (!focusPlayer && state.players.length) {
+    setTimeout(showPlayerPicker, 400);
+  }
 })();
 </script>
 </body>
