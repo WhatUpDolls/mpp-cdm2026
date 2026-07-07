@@ -118,6 +118,59 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
 .ccrd{background:var(--s1);border-radius:var(--r);margin:0 16px 10px;padding:14px}
 .ctitle{font-size:11px;font-weight:600;color:var(--t2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em}
 
+/* ── Admin FAB ── */
+.admin-fab{position:fixed;bottom:calc(var(--nav)+10px);right:14px;width:34px;height:34px;border-radius:50%;background:var(--s2);border:.5px solid var(--br);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:45;font-size:14px;opacity:.5;transition:opacity .2s;-webkit-tap-highlight-color:transparent}
+.admin-fab:active{opacity:1;background:var(--s3)}
+/* ── Tableau sous-onglets ── */
+.tsub-bar{display:flex;gap:6px;padding:0 16px 10px}
+.tsb{flex:1;padding:8px 0;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;background:var(--s2);color:var(--t3);border:none;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.tsb.on{background:var(--ac);color:#fff}
+.tsection{display:none}
+.tsection.on{display:block}
+/* Phase nav */
+.phase-nav{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 10px;gap:12px}
+.phase-arrow{width:36px;height:36px;border-radius:50%;background:var(--s2);border:.5px solid var(--br2);color:var(--t1);font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;-webkit-tap-highlight-color:transparent;transition:background .15s}
+.phase-arrow:active{background:var(--s3)}
+.phase-arrow:disabled{opacity:.25;pointer-events:none}
+.phase-name-block{flex:1;text-align:center}
+.phase-name{font-size:15px;font-weight:700;color:var(--t1)}
+.phase-date{font-size:11px;color:var(--t3);margin-top:2px}
+.phase-dots{display:flex;gap:5px;justify-content:center;padding:0 16px 12px}
+.phase-dot{width:6px;height:6px;border-radius:50%;background:var(--s3);transition:all .2s}
+.phase-dot.on{background:var(--ac);width:18px;border-radius:3px}
+/* Bracket match cards */
+.brk-wrap{padding:0 16px;overflow:hidden}
+.brk-matches{transition:opacity .18s,transform .18s}
+.brk-matches.slide-out-left{opacity:0;transform:translateX(-30px)}
+.brk-matches.slide-out-right{opacity:0;transform:translateX(30px)}
+/* Bracket pair grouping */
+.brk-pair{display:flex;align-items:stretch;margin-bottom:18px}
+.brk-pair-ms{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+.brk-conn{width:22px;flex-shrink:0;position:relative}
+.brk-conn::before{content:"";position:absolute;right:4px;top:16px;bottom:16px;width:8px;border:1.5px solid var(--br2);border-left:none;border-radius:0 5px 5px 0}
+.brk-conn::after{content:"";position:absolute;right:12px;top:50%;width:10px;height:1.5px;background:var(--br2);transform:translateY(-50%)}
+.brk-match{background:var(--s1);border-radius:var(--r);overflow:hidden}
+.brk-teams{padding:8px 14px}
+.brk-team{display:flex;align-items:center;justify-content:space-between;padding:6px 0}
+.brk-flag{font-size:14px;margin-right:6px;flex-shrink:0;line-height:1}
+.brk-tname{flex:1;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brk-score{font-size:15px;font-weight:800;min-width:28px;text-align:right;flex-shrink:0}
+.brk-divider{height:.5px;background:var(--br)}
+.brk-pens{font-size:10px;color:var(--ac);text-align:center;padding:3px 14px 5px;font-weight:600}
+/* Favoris — Vainqueur cards */
+.fav-card{position:relative;overflow:hidden;background:var(--s1);border-radius:var(--r);margin:0 16px 8px}
+.fav-card-body{display:flex;align-items:center;gap:12px;padding:14px 14px 12px;position:relative;z-index:1}
+.fav-card-left{min-width:80px;flex-shrink:0}
+.fav-card-country{font-size:14px;font-weight:700;color:var(--t1);line-height:1.2}
+.fav-card-cote{font-size:11px;color:var(--t3);margin-top:3px}
+.fav-card-players{flex:1;display:flex;flex-wrap:wrap;gap:4px;align-content:center}
+.fav-card-flag{position:absolute;right:-4px;top:50%;transform:translateY(-50%) rotate(18deg);font-size:64px;opacity:.12;line-height:1;z-index:0;pointer-events:none;user-select:none}
+.fav-card-elim{position:absolute;inset:0;background:rgba(240,82,82,.18);z-index:2;display:flex;align-items:center;justify-content:flex-end;padding-right:12px}
+.fav-card-elim-tag{font-size:10px;font-weight:700;color:var(--err);letter-spacing:.08em;text-transform:uppercase;background:rgba(240,82,82,.22);padding:3px 9px;border-radius:8px;border:.5px solid rgba(240,82,82,.4)}
+/* Favoris — Scorer cards */
+.fav-group{background:var(--s1);border-radius:var(--r);margin:0 16px 8px;overflow:hidden}
+.fav-players{padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:5px}
+.fav-chip{padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600}
 /* ── Saisie ── */
 .mlist{padding:0 16px}
 .mitem{background:var(--s1);border-radius:var(--r);margin-bottom:8px;overflow:hidden}
@@ -206,7 +259,7 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
 /* ── Slider fixe Classement ── */
 .slider-fixed{position:fixed;bottom:var(--nav);left:0;right:0;background:var(--bg);border-top:.5px solid var(--br);padding:8px 16px 10px;z-index:40;display:none}
 .slider-fixed.on{display:block}
-#s-rank{padding-bottom:70px}
+#s-rank{padding-bottom:16px}
 /* ── PIN overlay Saisie ── */
 .pin-overlay{position:absolute;inset:0;background:var(--bg);z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
 .pin-overlay.hidden{display:none}
@@ -235,12 +288,7 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
       </div>
     </div>
     <div id="rank-list"></div>
-    <div class="rank-chart-wrap">
-      <div class="rank-chart-title">Évolution des points</div>
-      <div style="position:relative;height:min(300px,42vh)">
-        <canvas id="rank-chart"></canvas>
-      </div>
-    </div>
+    <div id="favoris-body"></div>
   </div>
 
   <!-- BADGES -->
@@ -268,6 +316,12 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
     </div>
     <div class="compare-chips" id="compare-chips"></div>
     <div id="stats-body"></div>
+    <div class="rank-chart-wrap" style="margin-top:4px">
+      <div class="rank-chart-title">Évolution des points</div>
+      <div style="position:relative;height:min(300px,42vh)">
+        <canvas id="rank-chart"></canvas>
+      </div>
+    </div>
   </div>
 
   <!-- PROFIL -->
@@ -275,6 +329,25 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
     <div class="ph"><div><div class="ptitle">Profil</div><div class="psub">Ton identité de pronostiqueur</div></div></div>
     <div class="prof-sel" id="prof-sel"></div>
     <div id="profil-body"></div>
+  </div>
+
+  <!-- TABLEAU -->
+  <div class="screen" id="s-tableau">
+    <div class="ph"><div><div class="ptitle">Résultats</div><div class="psub" id="tableau-sub">Phase finale</div></div></div>
+    <div class="phase-nav" id="phase-nav">
+      <button class="phase-arrow" id="phase-prev" onclick="navPhase(-1)">‹</button>
+      <div class="phase-name-block">
+        <div class="phase-name" id="phase-name-label">–</div>
+        <div class="phase-date" id="phase-date-label"></div>
+      </div>
+      <button class="phase-arrow" id="phase-next" onclick="navPhase(1)">›</button>
+    </div>
+    <div class="phase-dots" id="phase-dots"></div>
+    <div class="brk-wrap" id="brk-wrap"
+      ontouchstart="brkTouchStart(event)"
+      ontouchend="brkTouchEnd(event)">
+      <div class="brk-matches" id="brk-matches"></div>
+    </div>
   </div>
 
   <!-- SAISIE -->
@@ -328,8 +401,11 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
   <button class="nb" onclick="goTo('badges',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M2 20c0-4 4-7 10-7s10 3 10 7"/></svg>Badges</button>
   <button class="nb" onclick="goTo('stats',this)"><svg viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="8"/><rect x="10" y="6" width="4" height="14"/><rect x="17" y="2" width="4" height="18"/></svg>Stats</button>
   <button class="nb" onclick="goTo('profil',this)"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profil</button>
-  <button class="nb" onclick="goTo('input',this)"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Saisie</button>
+  <button class="nb" onclick="goTo('tableau',this)"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Résultats</button>
 </nav>
+
+<!-- Admin floating button -->
+<button class="admin-fab" id="admin-fab" onclick="goToAdmin()" title="Admin">🔐</button>
 
 <!-- Story overlay -->
 <div class="sov" id="sov">
@@ -447,7 +523,7 @@ const KNOCKOUT_MATCHES = [...Array(32)].map((_,i)=>{
   const dates=["2026-06-28","2026-06-29","2026-06-29","2026-06-29","2026-06-30","2026-06-30","2026-06-30","2026-07-01","2026-07-01","2026-07-01","2026-07-02","2026-07-02","2026-07-02","2026-07-03","2026-07-03","2026-07-03","2026-07-04","2026-07-04","2026-07-05","2026-07-05","2026-07-06","2026-07-06","2026-07-07","2026-07-07","2026-07-09","2026-07-10","2026-07-11","2026-07-11","2026-07-14","2026-07-15","2026-07-18","2026-07-19"];
   return {id:73+i,phase:phases[i],date:dates[i]};
 });
-const PHASE_LABELS = {"32":"1/32","16":"1/16","QF":"Quart","SF":"Demi","3rd":"3e pl.","F":"Finale"};
+const PHASE_LABELS = {"32":"1/16","16":"1/8","QF":"Quart","SF":"Demi","3rd":"3e pl.","F":"Finale"};
 const ALL_MATCHES = [...MATCHES, ...KNOCKOUT_MATCHES];
 
 let state = {players:[], matchData:{}};
@@ -718,11 +794,21 @@ function goTo(id, btn) {
   document.getElementById("s-"+id).classList.add("active");
   btn.classList.add("on");
   // Slider classement : fixe visible seulement sur l'écran Classement
-  document.getElementById("slider-fixed").classList.toggle("on", id === "rank");
+  document.getElementById("slider-fixed").classList.remove("on");
   if (id==="badges") renderBadges();
-  if (id==="stats") renderStats();
+  if (id==="stats") { renderStats(); setTimeout(renderRankChart, 100); }
   if (id==="input") { if (saisieUnlocked) renderMatchList(); }
   if (id==="profil") renderProfil();
+  if (id==="tableau") renderTableau();
+  if (id==="rank") renderFavorisBody();
+}
+
+function goToAdmin() {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".nb").forEach(b => b.classList.remove("on"));
+  document.getElementById("s-input").classList.add("active");
+  document.getElementById("slider-fixed").classList.remove("on");
+  if (saisieUnlocked) renderMatchList();
 }
 
 // ── Classement ──
@@ -1722,8 +1808,8 @@ function renderRankChart() {
     {key:"J1",   label:"J1",     ids: MATCHES.filter(m=>m.round===1).map(m=>m.id)},
     {key:"J2",   label:"J2",     ids: MATCHES.filter(m=>m.round===2).map(m=>m.id)},
     {key:"J3",   label:"J3",     ids: MATCHES.filter(m=>m.round===3).map(m=>m.id)},
-    {key:"32",   label:"1/32",   ids: KNOCKOUT_MATCHES.filter(m=>m.phase==="32").map(m=>m.id)},
-    {key:"16",   label:"1/16",   ids: KNOCKOUT_MATCHES.filter(m=>m.phase==="16").map(m=>m.id)},
+    {key:"32",   label:"1/16",   ids: KNOCKOUT_MATCHES.filter(m=>m.phase==="32").map(m=>m.id)},
+    {key:"16",   label:"1/8",    ids: KNOCKOUT_MATCHES.filter(m=>m.phase==="16").map(m=>m.id)},
     {key:"QF",   label:"Quarts", ids: KNOCKOUT_MATCHES.filter(m=>m.phase==="QF").map(m=>m.id)},
     {key:"SF",   label:"Demis",  ids: KNOCKOUT_MATCHES.filter(m=>m.phase==="SF").map(m=>m.id)},
     {key:"3rd",  label:"3e pl.", ids: KNOCKOUT_MATCHES.filter(m=>m.phase==="3rd").map(m=>m.id)},
@@ -2076,12 +2162,335 @@ function renderProfilCard(pName) {
   }, 50);
 }
 
+// ── Tableau ──
+const FLAG_MAP = {
+  "Afrique du Sud":"\u{1F1FF}\u{1F1E6}","Algérie":"\u{1F1E9}\u{1F1FF}","Allemagne":"\u{1F1E9}\u{1F1EA}","Angleterre":"\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}",
+  "Argentine":"\u{1F1E6}\u{1F1F7}","Arabie saoudite":"\u{1F1F8}\u{1F1E6}","Australie":"\u{1F1E6}\u{1F1FA}","Autriche":"\u{1F1E6}\u{1F1F9}",
+  "Belgique":"\u{1F1E7}\u{1F1EA}","Bosnie":"\u{1F1E7}\u{1F1E6}","Brésil":"\u{1F1E7}\u{1F1F7}","Canada":"\u{1F1E8}\u{1F1E6}",
+  "Cap-Vert":"\u{1F1E8}\u{1F1FB}","Colombie":"\u{1F1E8}\u{1F1F4}","Corée du Sud":"\u{1F1F0}\u{1F1F7}","Croatie":"\u{1F1ED}\u{1F1F7}",
+  "Côte d'Ivoire":"\u{1F1E8}\u{1F1EE}","Curaçao":"\u{1F1E8}\u{1F1FC}","Égypte":"\u{1F1EA}\u{1F1EC}","Équateur":"\u{1F1EA}\u{1F1E8}",
+  "Espagne":"\u{1F1EA}\u{1F1F8}","États-Unis":"\u{1F1FA}\u{1F1F8}","Écosse":"\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}","France":"\u{1F1EB}\u{1F1F7}",
+  "Ghana":"\u{1F1EC}\u{1F1ED}","Haïti":"\u{1F1ED}\u{1F1F9}","Iran":"\u{1F1EE}\u{1F1F7}","Irak":"\u{1F1EE}\u{1F1F6}",
+  "Japon":"\u{1F1EF}\u{1F1F5}","Jordanie":"\u{1F1EF}\u{1F1F4}","Mexique":"\u{1F1F2}\u{1F1FD}","Maroc":"\u{1F1F2}\u{1F1E6}",
+  "Norvège":"\u{1F1F3}\u{1F1F4}","Nouvelle-Zélande":"\u{1F1F3}\u{1F1FF}","Ouzbékistan":"\u{1F1FA}\u{1F1FF}","Panama":"\u{1F1F5}\u{1F1E6}",
+  "Paraguay":"\u{1F1F5}\u{1F1FE}","Pays-Bas":"\u{1F1F3}\u{1F1F1}","Portugal":"\u{1F1F5}\u{1F1F9}","Qatar":"\u{1F1F6}\u{1F1E6}",
+  "RD Congo":"\u{1F1E8}\u{1F1E9}","Sénégal":"\u{1F1F8}\u{1F1F3}","Suède":"\u{1F1F8}\u{1F1EA}","Suisse":"\u{1F1E8}\u{1F1ED}",
+  "Tchéquie":"\u{1F1E8}\u{1F1FF}","Tunisie":"\u{1F1F9}\u{1F1F3}","Turquie":"\u{1F1F9}\u{1F1F7}","Uruguay":"\u{1F1FA}\u{1F1FE}"
+};
+const FLAG_NORM = {};
+(()=>{
+  for (const [k,v] of Object.entries(FLAG_MAP)) {
+    FLAG_NORM[k.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"")] = v;
+  }
+})();
+function flag(c) {
+  if (!c) return "";
+  if (FLAG_MAP[c]) return FLAG_MAP[c];
+  return FLAG_NORM[c.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"")] || "";
+}
+
+const BRACKET_PHASES = ["32","16","QF","SF","3rd","F"];
+// Bracket order: match IDs in the order they should appear in each phase,
+// grouped in pairs (consecutive pairs feed into the same next-round match).
+// 1/16 pairs: (73,75)→1/8#90, (74,77)→1/8#89, (81,82)→1/8#94, (83,84)→1/8#93,
+//             (76,78)→1/8#91, (79,80)→1/8#92, (86,88)→1/8#95, (85,87)→1/8#96
+// 1/8 pairs:  (90,89)→QF#97, (94,93)→QF#98, (91,92)→QF#99, (95,96)→QF#100
+// QF pairs:   (97,98)→SF#101, (99,100)→SF#102
+const BRACKET_ORDER = {
+  "32":[73,75,74,77, 81,82,83,84, 76,78,79,80, 86,88,85,87],
+  "16":[90,89,94,93, 91,92,95,96],
+  "QF":[97,98,99,100],
+  "SF":[101,102],
+  "3rd":[103],
+  "F":[104]
+};
+const BRACKET_PHASE_NAMES = {
+  "32":"1/16 de finale","16":"1/8 de finale",
+  "QF":"Quarts de finale","SF":"Demi-finales",
+  "3rd":"Petite finale","F":"Finale 🏆"
+};
+const BRACKET_PHASE_DATES = {
+  "32":"28 juin – 4 juil.","16":"4–7 juillet",
+  "QF":"9–12 juillet","SF":"14–15 juillet",
+  "3rd":"18 juillet","F":"19 juillet"
+};
+
+let bracketPhaseIdx = 0;
+let brkTouchX0 = null;
+
+function renderTableau() {
+  if (!state.players.length) return;
+  // Init phase to most recent with data
+  for (let i = BRACKET_PHASES.length - 1; i >= 0; i--) {
+    const ms = KNOCKOUT_MATCHES.filter(m => m.phase === BRACKET_PHASES[i]);
+    if (ms.some(m => { const d = state.matchData[m.id]; return d && (d.homeTeam || (d.scoreHome !== undefined && d.scoreHome !== "")); })) {
+      bracketPhaseIdx = i; break;
+    }
+  }
+  renderBracketPhase(false);
+}
+
+function navPhase(dir) {
+  const next = bracketPhaseIdx + dir;
+  if (next < 0 || next >= BRACKET_PHASES.length) return;
+  const wrap = document.getElementById("brk-matches");
+  wrap.classList.add(dir > 0 ? "slide-out-left" : "slide-out-right");
+  setTimeout(() => {
+    wrap.classList.remove("slide-out-left","slide-out-right");
+    bracketPhaseIdx = next;
+    renderBracketPhase(true);
+  }, 160);
+}
+
+function renderBracketPhase(instant) {
+  const phase = BRACKET_PHASES[bracketPhaseIdx];
+  // Phase name + date
+  document.getElementById("phase-name-label").textContent = BRACKET_PHASE_NAMES[phase];
+  document.getElementById("phase-date-label").textContent = BRACKET_PHASE_DATES[phase] || "";
+  // Arrows
+  document.getElementById("phase-prev").disabled = bracketPhaseIdx === 0;
+  document.getElementById("phase-next").disabled = bracketPhaseIdx === BRACKET_PHASES.length - 1;
+  // Dots
+  document.getElementById("phase-dots").innerHTML =
+    BRACKET_PHASES.map((_,i) => `<div class="phase-dot${i===bracketPhaseIdx?" on":""}"></div>`).join("");
+
+  // Helper: render a single match card
+  function matchCard(m) {
+    const d = state.matchData[m.id] || {};
+    const h = d.homeTeam || "À déterminer";
+    const a = d.awayTeam || "À déterminer";
+    const tbd = !d.homeTeam && !d.awayTeam;
+    const done = d.scoreHome !== undefined && d.scoreHome !== "";
+    const sh = done ? parseInt(d.scoreHome) : null;
+    const sa = done ? parseInt(d.scoreAway) : null;
+    const hasPens = done && sh === sa;
+    const qualifier = d.qualifier || null;
+    const hFlag = flag(h);
+    const aFlag = flag(a);
+    // With penalties, both scores stay grey; qualifier shown bold + asterisk
+    const hw = done && !hasPens && sh > sa;
+    const aw = done && !hasPens && sa > sh;
+    const hQual = hasPens && qualifier === h;
+    const aQual = hasPens && qualifier === a;
+    const hStyle = tbd ? "opacity:.4" : hw ? "font-weight:700;color:var(--t1)" : hQual ? "font-weight:700;color:var(--t1)" : done ? "color:var(--t3)" : "";
+    const aStyle = tbd ? "opacity:.4" : aw ? "font-weight:700;color:var(--t1)" : aQual ? "font-weight:700;color:var(--t1)" : done ? "color:var(--t3)" : "";
+    const hScoreStyle = hw ? "color:var(--ok)" : done ? "color:var(--t3)" : "color:var(--t3);opacity:.4";
+    const aScoreStyle = aw ? "color:var(--ok)" : done ? "color:var(--t3)" : "color:var(--t3);opacity:.4";
+    const hName = hQual ? h + " *" : h;
+    const aName = aQual ? a + " *" : a;
+    let pensNote = "";
+    if (hasPens && !qualifier) {
+      pensNote = `<div class="brk-pens" style="color:var(--t3)">Nul — qualifié non renseigné</div>`;
+    }
+    return `<div class="brk-match">
+      <div class="brk-teams">
+        <div class="brk-team">
+          ${hFlag?`<span class="brk-flag">${hFlag}</span>`:""}
+          <span class="brk-tname" style="${hStyle}">${hName}</span>
+          <span class="brk-score" style="${hScoreStyle}">${done?sh:"–"}</span>
+        </div>
+        <div class="brk-divider"></div>
+        <div class="brk-team">
+          ${aFlag?`<span class="brk-flag">${aFlag}</span>`:""}
+          <span class="brk-tname" style="${aStyle}">${aName}</span>
+          <span class="brk-score" style="${aScoreStyle}">${done?sa:"–"}</span>
+        </div>
+      </div>${pensNote}
+    </div>`;
+  }
+
+  // Matches in bracket order
+  const bracketIds = BRACKET_ORDER[phase] || [];
+  const matchById = {};
+  KNOCKOUT_MATCHES.forEach(m => { matchById[m.id] = m; });
+  const matches = bracketIds.length
+    ? bracketIds.map(id => matchById[id]).filter(Boolean)
+    : KNOCKOUT_MATCHES.filter(m => m.phase === phase);
+  const usePairs = matches.length >= 2 && phase !== "3rd" && phase !== "F";
+  let html = "";
+  if (usePairs) {
+    for (let i = 0; i < matches.length; i += 2) {
+      const m1 = matches[i], m2 = matches[i+1];
+      html += `<div class="brk-pair">
+        <div class="brk-pair-ms">
+          ${matchCard(m1)}
+          ${m2 ? matchCard(m2) : ""}
+        </div>
+        ${m2 ? '<div class="brk-conn"></div>' : ""}
+      </div>`;
+    }
+  } else {
+    matches.forEach(m => { html += matchCard(m); });
+  }
+  if (!html) html = `<div style="text-align:center;color:var(--t3);padding:32px 16px;font-size:13px">Aucun match renseigné pour cette phase</div>`;
+  document.getElementById("brk-matches").innerHTML = html;
+}
+
+function brkTouchStart(e) { brkTouchX0 = e.touches[0].clientX; }
+function brkTouchEnd(e) {
+  if (brkTouchX0 === null) return;
+  const dx = e.changedTouches[0].clientX - brkTouchX0;
+  brkTouchX0 = null;
+  if (Math.abs(dx) < 40) return;
+  navPhase(dx < 0 ? 1 : -1);
+}
+
+// Top scorers CDM 2026 (mis à jour au 6 juillet)
+const REAL_TOP_SCORERS = [
+  {name:"Lionel Messi",      country:"Argentine",  goals:7},
+  {name:"Kylian Mbappé",     country:"France",     goals:7},
+  {name:"Erling Haaland",    country:"Norvège",    goals:5},
+  {name:"Harry Kane",        country:"Angleterre", goals:5},
+  {name:"Vinicius Junior",   country:"Brésil",     goals:4},
+  {name:"Ousmane Dembélé",   country:"France",     goals:4, isAutre:true},
+  {name:"Ismaila Sarr",      country:"Sénégal",    goals:4},
+  {name:"Mikel Oyarzabal",   country:"Espagne",    goals:4, isAutre:true},
+  {name:"Cristiano Ronaldo", country:"Portugal",   goals:3},
+  {name:"Jonathan David",    country:"Canada",     goals:3},
+  {name:"Kai Havertz",       country:"Allemagne",  goals:3},
+  {name:"Deniz Undav",       country:"Allemagne",  goals:3},
+  {name:"Matheus Cunha",     country:"Brésil",     goals:3},
+  {name:"Brian Brobbey",     country:"Pays-Bas",   goals:3},
+  {name:"Cody Gakpo",        country:"Pays-Bas",   goals:3},
+  {name:"Ismael Saibari",    country:"Maroc",      goals:3, isAutre:true},
+  {name:"Folarin Balogun",   country:"États-Unis", goals:3},
+  {name:"Julian Quiñones",   country:"Mexique",    goals:3},
+  {name:"Jude Bellingham",   country:"Angleterre", goals:0, isAutre:true},
+  {name:"Yannick Manzambi",  country:"Pays-Bas",   goals:0, isAutre:true},
+];
+
+function scorerMatch(realName, pickedName) {
+  if (!pickedName) return false;
+  const a = realName.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+  const b = pickedName.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+  return a.includes(b) || b.includes(a) || a.split(" ").some(w=>w.length>3&&b.includes(w));
+}
+
+function renderFavorisBody() {
+  const pl = state.players;
+
+  // ── Vainqueur CDM ──
+  const wg = {};
+  pl.forEach((p,i) => {
+    if (!p.winner) return;
+    if (!wg[p.winner]) wg[p.winner] = {picks:[]};
+    wg[p.winner].picks.push({name:p.name, col:COLORS[i%COLORS.length], cote:p.coteWinner||"?"});
+  });
+  const ws = Object.entries(wg).sort((a,b) => b[1].picks.length - a[1].picks.length);
+
+  // Build eliminated teams set from knockout results
+  const eliminated = new Set();
+  KNOCKOUT_MATCHES.forEach(km => {
+    const d2 = state.matchData[km.id] || {};
+    if (km.phase === "3rd") return;
+    const done2 = d2.scoreHome !== undefined && d2.scoreHome !== "";
+    if (!done2 || !d2.homeTeam || !d2.awayTeam) return;
+    const sh2 = parseInt(d2.scoreHome), sa2 = parseInt(d2.scoreAway);
+    if (sh2 === sa2) { if (d2.qualifier === d2.homeTeam) eliminated.add(d2.awayTeam); else if (d2.qualifier === d2.awayTeam) eliminated.add(d2.homeTeam); }
+    else { eliminated.add(sh2 > sa2 ? d2.awayTeam : d2.homeTeam); }
+  });
+
+  let html = '<div class="sl">🏆 Vainqueur CDM</div>';
+  ws.forEach(([country,g]) => {
+    const cote = g.picks[0]?.cote || "?";
+    const isOut = eliminated.has(country);
+    const f = flag(country);
+    html += `<div class="fav-card">
+      <div class="fav-card-body">
+        <div class="fav-card-left">
+          <div class="fav-card-country">${country}</div>
+          <div class="fav-card-cote">${cote} pts</div>
+        </div>
+        <div class="fav-card-players">${g.picks.map(p=>`<div class="fav-chip" style="background:${p.col}22;color:${p.col}">${p.name}</div>`).join("")}</div>
+      </div>
+      ${f?`<div class="fav-card-flag">${f}</div>`:""}
+      ${isOut?`<div class="fav-card-elim"><span class="fav-card-elim-tag">Éliminé</span></div>`:""}
+    </div>`;
+  });
+  if (!ws.length) html += '<div style="padding:16px;text-align:center;color:var(--t3);font-size:13px">Aucun favori renseigné</div>';
+
+  // ── Meilleur buteur — classement réel + picks de la ligue ──
+  html += '<div class="sl" style="margin-top:4px">⚽ Meilleur buteur · Classement CDM</div>';
+
+  // Map picks from league players
+  const pickedMap = {}; // normalized name → {rawName, picks:[]}
+  pl.forEach((p,i) => {
+    const s = (p.scorer||"").trim();
+    if (!s) return;
+    const key = s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+    if (!pickedMap[key]) pickedMap[key] = {rawName:s, picks:[]};
+    pickedMap[key].picks.push({name:p.name, col:COLORS[i%COLORS.length], cote:p.coteScorer||"?"});
+  });
+
+  // Find picks that don't match any real top scorer (for the "autres" section)
+  const matchedPickKeys = new Set();
+
+  // Use state.scorers if admin has set it, otherwise fallback to hardcoded
+  const scorersList = (state.scorers && state.scorers.length) ? state.scorers : REAL_TOP_SCORERS;
+
+  // All tied at #1 are winners
+  const maxGoals = scorersList.length > 0 ? Math.max(...scorersList.map(s => s.goals)) : 0;
+
+  // Build ranking: real top scorers first, annotated with picks
+  let rank = 1;
+  let prevGoals = -1;
+  let displayRank = 1;
+  scorersList.forEach((scorer, idx) => {
+    if (scorer.goals !== prevGoals) { displayRank = rank; prevGoals = scorer.goals; }
+    rank++;
+    const isWinner = maxGoals > 0 && scorer.goals === maxGoals;
+    // Find matching picks — "autre" key matches any scorer flagged isAutre
+    const picks = [];
+    Object.entries(pickedMap).forEach(([key, entry]) => {
+      if (key === "autre") {
+        if (scorer.isAutre) { picks.push(...entry.picks); matchedPickKeys.add("autre"); }
+      } else if (scorerMatch(scorer.name, key)) {
+        picks.push(...entry.picks); matchedPickKeys.add(key);
+      }
+    });
+    const medalColor = isWinner ? "var(--gold)" : displayRank<=3?"var(--silver)":displayRank<=5?"var(--bronze)":"var(--t3)";
+    const autreChip = scorer.isAutre ? `<div style="display:flex;align-items:center;gap:4px;padding:2px 9px;border-radius:12px;background:rgba(245,200,66,.12);border:.5px solid rgba(245,200,66,.3)"><span style="font-size:11px;font-weight:700;color:#f5c842">Autre</span><span style="font-size:10px;color:#f5c842;opacity:.75">· 150 pts</span></div>` : '';
+    const showPicks = picks.length > 0 || scorer.isAutre;
+    html += `<div class="fav-group">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px 6px">
+        <div style="font-size:13px;font-weight:800;color:${medalColor};min-width:22px;text-align:center">${displayRank}</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700">${scorer.name}</div>
+          <div style="font-size:11px;color:var(--t3)">${flag(scorer.country)} ${scorer.country}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <span style="font-size:20px;font-weight:800;color:${isWinner?"var(--gold)":"var(--t1)"}">${scorer.goals}</span>
+          <span style="font-size:12px;color:var(--t3)">⚽</span>
+        </div>
+      </div>
+      ${showPicks ? `<div class="fav-players" style="padding-bottom:10px">${autreChip}${picks.map(p=>`<div style="display:flex;align-items:center;gap:4px;padding:2px 9px;border-radius:12px;background:${p.col}22"><span style="font-size:11px;font-weight:600;color:${p.col}">${p.name}</span><span style="font-size:10px;color:${p.col};opacity:.7">· ${p.cote} pts</span></div>`).join("")}</div>` : ""}
+    </div>`;
+  });
+
+  // Show remaining league picks not matched to any real top scorer ("autre" key is always handled via isAutre)
+  const unmatchedPicks = Object.entries(pickedMap).filter(([key]) => !matchedPickKeys.has(key) && key !== "autre");
+  if (unmatchedPicks.length) {
+    html += '<div class="sl" style="margin-top:4px;color:var(--t3)">Picks hors classement</div>';
+    unmatchedPicks.forEach(([, entry]) => {
+      html += `<div class="fav-group">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px 6px">
+          <div style="font-size:13px;font-weight:800;color:var(--t3);min-width:22px;text-align:center">–</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--t2)">${entry.rawName}</div></div>
+        </div>
+        <div class="fav-players" style="padding-bottom:10px">${entry.picks.map(p=>`<div style="display:flex;align-items:center;gap:4px;padding:2px 9px;border-radius:12px;background:${p.col}22"><span style="font-size:11px;font-weight:600;color:${p.col}">${p.name}</span><span style="font-size:10px;color:${p.col};opacity:.7">· ${p.cote} pts</span></div>`).join("")}</div>
+      </div>`;
+    });
+  }
+
+  document.getElementById("favoris-body").innerHTML = html;
+}
+
 // ── Init ──
 (async()=>{
   await loadData();
   renderRanking();
   renderFocusBtn();
-  setTimeout(renderRankChart, 100);
+  renderFavorisBody();
   // Show player picker on first visit (no focus player saved)
   if (!focusPlayer && state.players.length) {
     setTimeout(showPlayerPicker, 400);
