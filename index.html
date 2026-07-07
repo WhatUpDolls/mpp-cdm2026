@@ -2374,7 +2374,7 @@ function renderFavorisBody() {
   pl.forEach((p,i) => {
     if (!p.winner) return;
     if (!wg[p.winner]) wg[p.winner] = {picks:[]};
-    wg[p.winner].picks.push({name:p.name, col:COLORS[i%COLORS.length], cote:p.coteWinner||"?"});
+    wg[p.winner].picks.push({name:p.name, col:COLORS[i%COLORS.length], cote:(p.coteWinner!=null&&p.coteWinner!==0)?p.coteWinner:"?"});
   });
   const ws = Object.entries(wg).sort((a,b) => b[1].picks.length - a[1].picks.length);
 
@@ -2419,7 +2419,7 @@ function renderFavorisBody() {
     if (!s) return;
     const key = s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
     if (!pickedMap[key]) pickedMap[key] = {rawName:s, picks:[]};
-    pickedMap[key].picks.push({name:p.name, col:COLORS[i%COLORS.length], cote:p.coteScorer||"?"});
+    pickedMap[key].picks.push({name:p.name, col:COLORS[i%COLORS.length], cote:(p.coteScorer!=null&&p.coteScorer!==0)?p.coteScorer:"?"});
   });
 
   // Find picks that don't match any real top scorer (for the "autres" section)

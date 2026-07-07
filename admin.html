@@ -137,6 +137,7 @@ select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px r
     <div class="sidebar-label">Gestion</div>
     <div class="nav-item active" data-tab="matches" onclick="goTo(this,'matches')">📋 Matchs &amp; scores</div>
     <div class="nav-item" data-tab="players" onclick="goTo(this,'players')">👥 Joueurs</div>
+    <div class="nav-item" data-tab="scorers" onclick="goTo(this,'scorers')">⚽ Buteurs CDM</div>
     <div class="nav-item" data-tab="overview" onclick="goTo(this,'overview')">📊 Vue d'ensemble</div>
   </div>
   <div class="nav-divider"></div>
@@ -204,6 +205,41 @@ select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px r
       </div>
     </div>
     <div class="players-grid" id="players-grid"></div>
+  </div>
+
+  <!-- BUTEURS CDM -->
+  <div id="tab-scorers" class="tab-content">
+    <div class="page-header"><h1>Buteurs CDM 2026</h1><p>Classement des meilleurs buteurs affiché dans l'app.</p></div>
+    <div class="card">
+      <div class="card-title">Ajouter / modifier un buteur</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 80px auto;gap:8px;align-items:end;margin-bottom:8px">
+        <div>
+          <div class="field-label">Nom du joueur</div>
+          <input type="text" id="sc-name" placeholder="ex: Kylian Mbappé">
+        </div>
+        <div>
+          <div class="field-label">Pays</div>
+          <input type="text" id="sc-country" placeholder="ex: France">
+        </div>
+        <div>
+          <div class="field-label">Buts</div>
+          <input type="number" id="sc-goals" min="0" value="1" style="text-align:center">
+        </div>
+        <div>
+          <button class="btn btn-primary" onclick="addOrUpdateScorer()" style="height:32px;margin-top:auto">Ajouter</button>
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;margin-bottom:8px">
+        <input type="checkbox" id="sc-autre">
+        Catégorie <strong>Autre</strong> — ce joueur est considéré comme un buteur surprise (hors favoris nommés)
+      </label>
+      <div style="font-size:11px;color:var(--text3)">Si le joueur existe déjà (même nom), ses buts et sa catégorie seront mis à jour.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Classement actuel <span id="sc-count" style="font-weight:400;color:var(--text3)"></span></div>
+      <div id="scorers-list"></div>
+      <button class="btn btn-sm" style="margin-top:10px" onclick="resetToDefault()">↺ Réinitialiser depuis le classement par défaut</button>
+    </div>
   </div>
 
   <!-- OVERVIEW -->
@@ -406,6 +442,7 @@ function goTo(el, tab) {
   document.getElementById('tab-'+tab).classList.add('active');
   if (tab==='players') renderPlayers();
   if (tab==='overview') renderOverview();
+  if (tab==='scorers') renderScorers();
 }
 
 // ─── MATCHES ─────────────────────────────────────────────────────────────
@@ -510,6 +547,14 @@ function renderDetail(m, d) {
           </select>
         </div>
       </div>
+      <div style="margin-top:10px">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:4px">Qualifié aux t.a.b. (si match nul)</div>
+        <select id="ql-${m.id}" style="max-width:260px">
+          <option value="">— Aucun (pas de t.a.b.) —</option>
+          ${d.homeTeam?`<option value="${d.homeTeam}"${d.qualifier===d.homeTeam?' selected':''}>${d.homeTeam}</option>`:''}
+          ${d.awayTeam?`<option value="${d.awayTeam}"${d.qualifier===d.awayTeam?' selected':''}>${d.awayTeam}</option>`:''}
+        </select>
+      </div>
     </div>` : '';
 
   return `<div class="detail-sections">
@@ -601,6 +646,9 @@ function saveMatch(id) {
   const tnA = document.getElementById('tn-'+id+'-a');
   if (tnH) d.homeTeam = tnH.value || undefined;
   if (tnA) d.awayTeam = tnA.value || undefined;
+  // Qualifié aux t.a.b.
+  const ql = document.getElementById('ql-'+id);
+  if (ql) d.qualifier = ql.value || undefined;
 
   // Cotes 1/N/2
   const ct1 = document.getElementById('ct-'+id+'-1');
@@ -649,6 +697,13 @@ function saveMatch(id) {
     }
   }
 
+  // Re-render detail section so qualifier dropdown reflects updated team names
+  const det = document.getElementById('md-'+id);
+  if (det && det.classList.contains('open')) {
+    const mRef = MATCHES_RAW.find(x=>x.id===id);
+    if (mRef) det.innerHTML = renderDetail(mRef, d);
+  }
+
   // Show save confirmation
   const msg = document.getElementById('save-msg-'+id);
   if (msg) { msg.style.display='inline'; setTimeout(()=>msg.style.display='none',2000); }
@@ -695,25 +750,50 @@ function renderPlayers() {
     const ini=p.name.substring(0,2).toUpperCase();
     const isMe = p.isMe || false;
     const cardBorder = isMe ? 'border:1.5px solid var(--accent);' : '';
+    const esc = p.name.replace(/'/g,"\\'");
+    const isAutreScorer = p.scorer === 'Autre';
+    const coteW = (p.coteWinner != null && p.coteWinner !== 0) ? p.coteWinner : '';
+    const coteS = (p.coteScorer != null && p.coteScorer !== 0) ? p.coteScorer : '';
     return `<div class="player-card" style="${cardBorder}">
       <div class="player-name-row">
         <span class="avatar" style="${isMe?'background:var(--accent);color:white;':''}">${ini}</span>
         <span style="font-weight:500;font-size:13px">${p.name}${isMe?' <span style="font-size:10px;color:var(--accent);font-weight:400">(moi)</span>':''}</span>
-        ${!isMe?`<button class="btn btn-sm" style="margin-left:auto;color:var(--text3)" onclick="removePlayer('${p.name}')">×</button>`:''}
+        ${!isMe?`<button class="btn btn-sm" style="margin-left:auto;color:var(--text3)" onclick="removePlayer('${esc}')">×</button>`:''}
       </div>
       <div class="player-fields">
         <div>
-          <div class="field-label">Vainqueur CDM</div>
-          <select onchange="updatePlayer('${p.name}','winner',this.value)">
+          <div class="field-label">🏆 Vainqueur CDM</div>
+          <select onchange="updatePlayer('${esc}','winner',this.value)">
             <option value="">–</option>
             ${ALL_TEAMS.map(t=>`<option ${p.winner===t?'selected':''}>${t}</option>`).join('')}
           </select>
-          <div style="margin-top:3px;font-size:11px;color:var(--text3)">Cote : <input type="number" value="${p.coteWinner||''}" placeholder="–" style="width:50px;height:22px;font-size:11px;display:inline-block" oninput="updatePlayer('${p.name}','coteWinner',+this.value)"> pts</div>
+          <div style="margin-top:5px;display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)">
+            Cote :
+            <input type="number" value="${coteW}" placeholder="pts" min="0"
+              style="width:60px;height:24px;font-size:12px;font-weight:600;color:var(--text);display:inline-block"
+              onchange="updatePlayerCote('${esc}','coteWinner',this.value)">
+            pts
+          </div>
         </div>
         <div>
-          <div class="field-label">Meilleur buteur</div>
-          <input type="text" value="${p.scorer||''}" placeholder="Nom" oninput="updatePlayer('${p.name}','scorer',this.value)">
-          <div style="margin-top:3px;font-size:11px;color:var(--text3)">Cote : <input type="number" value="${p.coteScorer||''}" placeholder="–" style="width:50px;height:22px;font-size:11px;display:inline-block" oninput="updatePlayer('${p.name}','coteScorer',+this.value)"> pts</div>
+          <div class="field-label" style="display:flex;align-items:center;gap:8px">
+            ⚽ Meilleur buteur
+            <label style="font-weight:400;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:3px;color:${isAutreScorer?'#d4a800':'var(--text3)'}">
+              <input type="checkbox" ${isAutreScorer?'checked':''} onchange="setPlayerAutre('${esc}',this.checked)" style="margin:0">
+              Autre
+            </label>
+          </div>
+          ${isAutreScorer
+            ? `<div style="padding:5px 8px;background:rgba(237,161,0,.1);border:.5px solid rgba(237,161,0,.35);border-radius:6px;font-size:12px;color:#d4a800;font-weight:500">Catégorie Autre · surprise</div>`
+            : `<input type="text" value="${p.scorer||''}" placeholder="Nom du buteur" oninput="updatePlayer('${esc}','scorer',this.value)">`
+          }
+          <div style="margin-top:5px;display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)">
+            Cote :
+            <input type="number" value="${coteS}" placeholder="pts" min="0"
+              style="width:60px;height:24px;font-size:12px;font-weight:600;color:var(--text);display:inline-block"
+              onchange="updatePlayerCote('${esc}','coteScorer',this.value)">
+            pts
+          </div>
         </div>
       </div>
     </div>`;
@@ -723,6 +803,23 @@ function renderPlayers() {
 function updatePlayer(name, field, value) {
   const p=state.players.find(x=>x.name===name);
   if(p){p[field]=value;saveState();}
+}
+
+function updatePlayerCote(name, field, value) {
+  const p = state.players.find(x => x.name === name);
+  if (p) {
+    p[field] = value !== '' ? Number(value) : null;
+    saveState();
+  }
+}
+
+function setPlayerAutre(name, val) {
+  const p = state.players.find(x => x.name === name);
+  if (p) {
+    p.scorer = val ? 'Autre' : '';
+    saveState();
+    renderPlayers();
+  }
 }
 
 function removePlayer(name) {
@@ -907,6 +1004,100 @@ function handleImport(e) {
     } catch(err){notify('Erreur de lecture');}
   };
   reader.readAsText(file);
+}
+
+// ─── BUTEURS CDM ──────────────────────────────────────────────────────────
+const DEFAULT_SCORERS = [
+  {name:"Lionel Messi",      country:"Argentine",  goals:7},
+  {name:"Kylian Mbappé",     country:"France",     goals:7},
+  {name:"Erling Haaland",    country:"Norvège",    goals:5},
+  {name:"Harry Kane",        country:"Angleterre", goals:5},
+  {name:"Vinicius Junior",   country:"Brésil",     goals:4},
+  {name:"Ousmane Dembélé",   country:"France",     goals:4},
+  {name:"Ismaila Sarr",      country:"Sénégal",    goals:4},
+  {name:"Mikel Oyarzabal",   country:"Espagne",    goals:4},
+  {name:"Cristiano Ronaldo", country:"Portugal",   goals:3},
+  {name:"Jonathan David",    country:"Canada",     goals:3},
+  {name:"Kai Havertz",       country:"Allemagne",  goals:3},
+  {name:"Deniz Undav",       country:"Allemagne",  goals:3},
+  {name:"Matheus Cunha",     country:"Brésil",     goals:3},
+  {name:"Brian Brobbey",     country:"Pays-Bas",   goals:3},
+  {name:"Cody Gakpo",        country:"Pays-Bas",   goals:3},
+  {name:"Ismael Saibari",    country:"Maroc",      goals:3},
+  {name:"Folarin Balogun",   country:"États-Unis", goals:3},
+  {name:"Julian Quiñones",   country:"Mexique",    goals:3},
+];
+
+function getScorers() {
+  return (state.scorers && state.scorers.length) ? state.scorers : JSON.parse(JSON.stringify(DEFAULT_SCORERS));
+}
+
+function renderScorers() {
+  const scorers = getScorers().sort((a,b)=>b.goals-a.goals||a.name.localeCompare(b.name));
+  document.getElementById('sc-count').textContent = '— '+scorers.length+' joueurs';
+  let html = '<table style="width:100%;border-collapse:collapse">';
+  html += '<thead><tr style="font-size:11px;color:var(--text3);text-align:left"><th style="padding:6px 8px">Joueur</th><th style="padding:6px 8px">Pays</th><th style="padding:6px 8px;text-align:center">Buts</th><th style="padding:6px 8px;text-align:center">Autre</th><th style="padding:6px 8px"></th></tr></thead><tbody>';
+  scorers.forEach((s,i) => {
+    const esc = s.name.replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+    html += `<tr style="border-top:0.5px solid var(--border)${s.isAutre?';background:rgba(245,200,66,.05)':''}">
+      <td style="padding:7px 8px;font-weight:500">${s.name}${s.isAutre?'<span style="font-size:9px;font-weight:700;color:#f5c842;background:rgba(245,200,66,.15);padding:1px 5px;border-radius:4px;margin-left:5px">AUTRE</span>':''}</td>
+      <td style="padding:7px 8px;color:var(--text2)">${s.country}</td>
+      <td style="padding:7px 8px;text-align:center">
+        <div style="display:flex;align-items:center;justify-content:center;gap:5px">
+          <button class="btn btn-sm" onclick="adjustGoals('${esc}', -1)" style="width:26px;padding:2px 0;text-align:center">−</button>
+          <span style="font-size:15px;font-weight:700;min-width:22px;text-align:center">${s.goals}</span>
+          <button class="btn btn-sm" onclick="adjustGoals('${esc}', 1)" style="width:26px;padding:2px 0;text-align:center">+</button>
+        </div>
+      </td>
+      <td style="padding:7px 8px;text-align:center">
+        <input type="checkbox" ${s.isAutre?'checked':''} onchange="toggleAutre('${esc}', this.checked)" title="Marqué comme Autre">
+      </td>
+      <td style="padding:7px 8px"><button class="btn btn-sm" onclick="removeScorer('${esc}')">✕</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('scorers-list').innerHTML = html;
+}
+
+function addOrUpdateScorer() {
+  const name = document.getElementById('sc-name').value.trim();
+  const country = document.getElementById('sc-country').value.trim();
+  const goals = parseInt(document.getElementById('sc-goals').value) || 0;
+  const isAutre = document.getElementById('sc-autre').checked;
+  if (!name) { notify('Nom requis'); return; }
+  if (!state.scorers || !state.scorers.length) state.scorers = JSON.parse(JSON.stringify(DEFAULT_SCORERS));
+  const existing = state.scorers.find(s => s.name.toLowerCase() === name.toLowerCase());
+  if (existing) { existing.goals = goals; if (country) existing.country = country; existing.isAutre = isAutre; }
+  else state.scorers.push({name, country: country||'–', goals, isAutre});
+  document.getElementById('sc-name').value = '';
+  document.getElementById('sc-country').value = '';
+  document.getElementById('sc-goals').value = '1';
+  document.getElementById('sc-autre').checked = false;
+  saveState(); renderScorers(); notify('✓ '+name+' mis à jour');
+}
+
+function toggleAutre(name, val) {
+  if (!state.scorers || !state.scorers.length) state.scorers = JSON.parse(JSON.stringify(DEFAULT_SCORERS));
+  const s = state.scorers.find(s => s.name === name);
+  if (s) { s.isAutre = val; saveState(); renderScorers(); }
+}
+
+function adjustGoals(name, delta) {
+  if (!state.scorers || !state.scorers.length) state.scorers = JSON.parse(JSON.stringify(DEFAULT_SCORERS));
+  const s = state.scorers.find(s => s.name === name);
+  if (s) { s.goals = Math.max(0, s.goals + delta); saveState(); renderScorers(); }
+}
+
+function removeScorer(name) {
+  if (!state.scorers || !state.scorers.length) state.scorers = JSON.parse(JSON.stringify(DEFAULT_SCORERS));
+  state.scorers = state.scorers.filter(s => s.name !== name);
+  saveState(); renderScorers(); notify(name+' supprimé');
+}
+
+function resetToDefault() {
+  if (!confirm('Réinitialiser le classement des buteurs depuis les données par défaut ?')) return;
+  state.scorers = JSON.parse(JSON.stringify(DEFAULT_SCORERS));
+  saveState(); renderScorers(); notify('Classement réinitialisé');
 }
 
 // ─── NOTIFY ───────────────────────────────────────────────────────────────
