@@ -401,7 +401,7 @@ input[type=range]{width:100%;accent-color:var(--ac);height:4px;cursor:pointer}
   <button class="nb" onclick="goTo('badges',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M2 20c0-4 4-7 10-7s10 3 10 7"/></svg>Badges</button>
   <button class="nb" onclick="goTo('stats',this)"><svg viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="8"/><rect x="10" y="6" width="4" height="14"/><rect x="17" y="2" width="4" height="18"/></svg>Stats</button>
   <button class="nb" onclick="goTo('profil',this)"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profil</button>
-  <button class="nb" onclick="goTo('tableau',this)"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Résultats</button>
+  <button class="nb" onclick="goTo('tableau',this)"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Tableau</button>
 </nav>
 
 <!-- Admin floating button -->
@@ -2024,16 +2024,193 @@ function buildPlayerProfile(pName) {
   return { archetype, arcColor, exactRate, goodRate, avgCote, favRate, maxStreak, exacts, goods, played:coteCount, total, myRank, exactRank, goodRank, riskRank, radarData, phrases, nearMiss, exactsOnGoodRate };
 }
 
+// ── Stratégie & Prédictions ───────────────────────────────────────────────
+function buildStrategySection(pName) {
+  // Full ranking from all scored matches
+  const scoredIds = Object.keys(state.matchData).map(Number).filter(id => {
+    const d = state.matchData[id];
+    return d && d.scoreHome !== undefined && d.scoreHome !== '';
+  });
+  const allRanked = [...state.players].map((p, i) => ({
+    ...p, pts: getTotalUpTo(p.name, scoredIds), col: COLORS[i % COLORS.length]
+  })).sort((a, b) => b.pts - a.pts);
+
+  const myEntry = allRanked.find(p => p.name === pName);
+  if (!myEntry) return '';
+  const myRank = allRanked.findIndex(p => p.name === pName) + 1;
+  const n = allRanked.length;
+  const myPts = myEntry.pts;
+  const above = myRank > 1 ? allRanked[myRank - 2] : null;
+  const below = myRank < n ? allRanked[myRank] : null;
+  const gapFirst = allRanked[0].pts - myPts;
+  const gapThird = myRank > 3 ? (allRanked[2].pts - myPts) : 0;
+  const marginBelow = below ? (myPts - below.pts) : null;
+
+  // Strategy
+  let riskLevel, stratLabel, stratColor, stratDesc;
+  if (myRank === 1) {
+    riskLevel = 0; stratLabel = "Gérer l'avance"; stratColor = "var(--gold)";
+    stratDesc = marginBelow !== null ? `${marginBelow} pt${marginBelow>1?'s':''} d'avance sur ${below.name}` : "Seul en tête";
+  } else if (myRank <= 3) {
+    riskLevel = 1; stratLabel = "Défendre le podium"; stratColor = "var(--silver)";
+    stratDesc = `${gapFirst} pt${gapFirst>1?'s':''} du leader${marginBelow!==null?' · '+marginBelow+' pts sur le 4e':''}`;
+  } else if (gapThird <= 20) {
+    riskLevel = 1; stratLabel = "Foncer sur le podium"; stratColor = "var(--ac)";
+    stratDesc = `À ${gapThird} pt${gapThird>1?'s':''} du podium, pousser fort`;
+  } else {
+    riskLevel = 2; stratLabel = "Tout tenter"; stratColor = "var(--err)";
+    stratDesc = `${gapFirst} pts du leader — scores exacts nécessaires`;
+  }
+
+  // Team stats from all played matches
+  const ts = {};
+  ALL_MATCHES.forEach(m => {
+    const d = state.matchData[m.id];
+    if (!d || d.scoreHome === undefined || d.scoreHome === '') return;
+    const sh = parseInt(d.scoreHome), sa = parseInt(d.scoreAway);
+    if (isNaN(sh) || isNaN(sa)) return;
+    const h = d.homeTeam || m.home || '', a = d.awayTeam || m.away || '';
+    if (!h || !a || h === 'À déterminer' || a === 'À déterminer') return;
+    [h, a].forEach(t => { if (!ts[t]) ts[t] = {gf:0,ga:0,w:0,d:0,l:0,n:0}; });
+    ts[h].gf += sh; ts[h].ga += sa; ts[h].n++;
+    ts[a].gf += sa; ts[a].ga += sh; ts[a].n++;
+    if (sh > sa) { ts[h].w++; ts[a].l++; }
+    else if (sa > sh) { ts[a].w++; ts[h].l++; }
+    else { ts[h].d++; ts[a].d++; }
+  });
+
+  // Predict score for a match
+  function predict(home, away, risky) {
+    const h = ts[home] || {gf:0,ga:0,w:0,d:0,l:0,n:0};
+    const a = ts[away] || {gf:0,ga:0,w:0,d:0,l:0,n:0};
+    const hAvgG = h.n > 0 ? h.gf / h.n : 1.2;
+    const aAvgG = a.n > 0 ? a.gf / a.n : 1.2;
+    const hAvgC = h.n > 0 ? h.ga / h.n : 1.2;
+    const aAvgC = a.n > 0 ? a.ga / a.n : 1.2;
+    const hExp = Math.round(hAvgG * 0.7 + aAvgC * 0.3);
+    const aExp = Math.round(aAvgG * 0.7 + hAvgC * 0.3);
+    const hStr = h.n > 0 ? (h.w * 3 + h.d) / (h.n * 3) : 0.5;
+    const aStr = a.n > 0 ? (a.w * 3 + a.d) / (a.n * 3) : 0.5;
+    const delta = hStr - aStr;
+    let hScore, aScore, note;
+    if (!risky) {
+      if (delta > 0.12) { hScore = Math.max(1,hExp); aScore = Math.max(0,Math.min(hScore-1,aExp)); note = `${home} favori (${Math.round(hStr*100)}% V)`; }
+      else if (delta < -0.12) { aScore = Math.max(1,aExp); hScore = Math.max(0,Math.min(aScore-1,hExp)); note = `${away} favori (${Math.round(aStr*100)}% V)`; }
+      else { hScore = Math.max(1,hExp); aScore = Math.max(0,aExp); note = "Match serré — joue le score probable"; }
+    } else {
+      if (delta > 0.12) { aScore = Math.max(1,aExp+1); hScore = Math.max(0,aScore-1); note = `Pari sur la surprise : ${away} crée l'exploit`; }
+      else if (delta < -0.12) { hScore = Math.max(1,hExp+1); aScore = Math.max(0,hScore-1); note = `Pari sur la surprise : ${home} crée l'exploit`; }
+      else { hScore = Math.max(2,hExp+1); aScore = Math.max(1,aExp); note = "Score élevé pour viser l'exact et max les points"; }
+    }
+    return { hScore, aScore, note };
+  }
+
+  // Upcoming matches
+  const upcoming = ALL_MATCHES.map(m => {
+    const d = state.matchData[m.id] || {};
+    if (d.scoreHome !== undefined && d.scoreHome !== '') return null;
+    const home = d.homeTeam || m.home || '';
+    const away = d.awayTeam || m.away || '';
+    if (!home || !away || home === 'À déterminer' || away === 'À déterminer') return null;
+    const phase = m.phase ? (PHASE_LABELS[m.phase]||m.phase) : (m.round ? `J${m.round} · Gr.${m.group||''}` : '');
+    return { id: m.id, home, away, phase };
+  }).filter(Boolean);
+
+  // Build HTML
+  let h = '<div class="prof-card">';
+  h += '<div class="sl" style="padding:0 0 12px">🔮 Tactique & Prédictions</div>';
+
+  // Strategy banner
+  h += `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:${stratColor}18;border-radius:10px;margin-bottom:12px;border:.5px solid ${stratColor}33">
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Stratégie recommandée</div>
+      <div style="font-size:17px;font-weight:800;color:${stratColor}">${stratLabel}</div>
+      <div style="font-size:11px;color:var(--t3);margin-top:3px">${stratDesc}</div>
+    </div>
+    <div style="text-align:center;min-width:48px">
+      <div style="font-size:30px;font-weight:900;color:${stratColor};line-height:1">${myRank}</div>
+      <div style="font-size:10px;color:var(--t3)">/${n}</div>
+    </div>
+  </div>`;
+
+  // Gap pills
+  const pills = [];
+  if (gapFirst > 0) pills.push({val:`−${gapFirst}`, lbl:'pts du leader', col:'var(--err)'});
+  if (gapThird > 0) pills.push({val:`−${gapThird}`, lbl:'pts du podium', col:'var(--warn)'});
+  if (marginBelow !== null && myRank <= n) pills.push({val:`+${marginBelow}`, lbl:`pts sur ${below.name}`, col:'var(--ok)'});
+  if (pills.length) {
+    h += `<div style="display:flex;gap:6px;margin-bottom:14px">${pills.map(p=>`<div style="flex:1;padding:8px;background:var(--s2);border-radius:8px;text-align:center;min-width:0"><div style="font-size:16px;font-weight:800;color:${p.col}">${p.val}</div><div style="font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.lbl}</div></div>`).join('')}</div>`;
+  }
+
+  // Upcoming match predictions
+  if (upcoming.length > 0) {
+    const risky = riskLevel === 2;
+    const tipText = risky
+      ? "Tu as besoin de scores exacts (3+ pts) — ose les pronostics précis, même risqués"
+      : riskLevel === 1
+        ? "Vise le bon résultat et les bons scores, chaque point compte"
+        : "Joue les pronostics solides et fiables — pas la peine de risquer";
+
+    h += `<div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Matchs à pronostiquer</div>`;
+    h += `<div style="font-size:11px;color:var(--t3);padding:7px 10px;background:${risky?'rgba(240,82,82,.08)':riskLevel===1?'rgba(61,142,240,.08)':'rgba(34,201,122,.08)'};border-radius:8px;border-left:2px solid ${risky?'var(--err)':riskLevel===1?'var(--ac)':'var(--ok)'};margin-bottom:12px">💡 ${tipText}</div>`;
+
+    upcoming.slice(0, 4).forEach(m => {
+      const pred = predict(m.home, m.away, risky);
+      const hs = ts[m.home], as_ = ts[m.away];
+      const hForm = hs && hs.n > 0 ? `${hs.w}V ${hs.d}N ${hs.l}D · ${hs.gf} buts` : '–';
+      const aForm = as_ && as_.n > 0 ? `${as_.w}V ${as_.d}N ${as_.l}D · ${as_.gf} buts` : '–';
+      const hf = flag(m.home), af = flag(m.away);
+      h += `<div style="padding:12px;background:var(--s1);border-radius:10px;margin-bottom:8px;border:.5px solid var(--br2)">
+        <div style="font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">${m.phase}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700">${hf} ${m.home}</div>
+            <div style="font-size:10px;color:var(--t3)">${hForm}</div>
+          </div>
+          <div style="background:var(--s2);border-radius:8px;padding:6px 12px;text-align:center;flex-shrink:0">
+            <div style="font-size:20px;font-weight:900;color:${risky?'var(--err)':riskLevel===1?'var(--ac)':'var(--ok)'};letter-spacing:.05em">${pred.hScore}–${pred.aScore}</div>
+            <div style="font-size:9px;font-weight:700;color:var(--t3);letter-spacing:.05em">PRÉDIT</div>
+          </div>
+          <div style="flex:1;text-align:right">
+            <div style="font-size:13px;font-weight:700">${m.away} ${af}</div>
+            <div style="font-size:10px;color:var(--t3)">${aForm}</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--t3);padding:5px 8px;background:var(--s2);border-radius:6px">💬 ${pred.note}</div>
+      </div>`;
+    });
+
+    if (upcoming.length > 4) {
+      h += `<div style="text-align:center;font-size:11px;color:var(--t3);padding:6px">+${upcoming.length-4} matchs à venir</div>`;
+    }
+  } else {
+    h += `<div style="padding:24px;text-align:center;color:var(--t3);font-size:13px">Tous les matchs du tournoi sont joués 🏁</div>`;
+  }
+
+  h += '</div>';
+  return h;
+}
+
 function renderProfil() {
   if (!state.players.length) return;
-  // Selector
-  document.getElementById("prof-sel").innerHTML = state.players.map((p,i) =>
-    '<div class="psel'+(currentProfil===p.name?" on":"")+'" onclick="selectProfil(\'' + p.name.replace(/'/g,"\\'") + '\')">' +
-    (p.isMe||p.name===focusPlayer?"★ ":"")+p.name+'</div>'
-  ).join("");
-  if (!currentProfil) {
-    const fp = focusPlayer && state.players.find(p=>p.name===focusPlayer);
-    currentProfil = fp ? focusPlayer : (state.players.find(p=>p.isMe)||state.players[0])?.name;
+  // Selector visible only for the 'isMe' player (or no focus = admin mode)
+  const mePlayer = state.players.find(p => p.isMe);
+  const canBrowse = !focusPlayer || (mePlayer && focusPlayer === mePlayer.name);
+  const selEl = document.getElementById("prof-sel");
+  if (canBrowse) {
+    selEl.style.display = "";
+    selEl.innerHTML = state.players.map((p,i) =>
+      '<div class="psel'+(currentProfil===p.name?" on":"")+'" onclick="selectProfil(\'' + p.name.replace(/'/g,"\\'") + '\')">' +
+      (p.isMe||p.name===focusPlayer?"★ ":"")+p.name+'</div>'
+    ).join("");
+    if (!currentProfil) {
+      const fp = focusPlayer && state.players.find(p=>p.name===focusPlayer);
+      currentProfil = fp ? focusPlayer : (mePlayer||state.players[0])?.name;
+    }
+  } else {
+    selEl.style.display = "none";
+    selEl.innerHTML = "";
+    currentProfil = focusPlayer;
   }
   renderProfilCard(currentProfil);
 }
@@ -2069,6 +2246,62 @@ function renderProfilCard(pName) {
   html += '<div class="pst" style="grid-column:1/-1"><div class="pst-ico">🔬</div><div class="pst-val">'+prof.exactsOnGoodRate+'%<span class="pst-den"> conv.</span></div><div class="pst-sub">'+prof.exacts+' exact'+(prof.exacts!==1?'s':'')+' / '+prof.goods+' bon'+(prof.goods!==1?'s':'prono')+'</div><div class="pst-lbl">Conversion exact / bon résultat</div></div>';
   html += '</div>';
   html += '</div>';
+
+  // ── Favoris CDM ──
+  const pdata = state.players.find(pl => pl.name === pName);
+  if (pdata) {
+    const hasWinner = pdata.winner;
+    const hasScorer = pdata.scorer;
+    if (hasWinner || hasScorer) {
+      // Build eliminated teams set
+      const eliminated = new Set();
+      KNOCKOUT_MATCHES.forEach(km => {
+        const d2 = state.matchData[km.id] || {};
+        if (km.phase === "3rd") return;
+        const done2 = d2.scoreHome !== undefined && d2.scoreHome !== "";
+        if (!done2 || !d2.homeTeam || !d2.awayTeam) return;
+        const sh2 = parseInt(d2.scoreHome), sa2 = parseInt(d2.scoreAway);
+        if (sh2 === sa2) { if (d2.qualifier === d2.homeTeam) eliminated.add(d2.awayTeam); else if (d2.qualifier === d2.awayTeam) eliminated.add(d2.homeTeam); }
+        else { eliminated.add(sh2 > sa2 ? d2.awayTeam : d2.homeTeam); }
+      });
+      const winnerElim = hasWinner && eliminated.has(pdata.winner);
+      const isAutreS = pdata.scorer === 'Autre';
+      const scorersL = (state.scorers && state.scorers.length) ? state.scorers : REAL_TOP_SCORERS;
+      const scorerEntry = !isAutreS && hasScorer ? scorersL.find(s => scorerMatch(s.name, pdata.scorer)) : null;
+      const scorerElim = !!(scorerEntry && eliminated.has(scorerEntry.country));
+
+      html += '<div class="prof-card">';
+      html += '<div class="sl" style="padding:0 0 10px">🎯 Favoris CDM</div>';
+      if (hasWinner) {
+        const fw = flag(pdata.winner);
+        const cw = (pdata.coteWinner != null && pdata.coteWinner !== 0) ? pdata.coteWinner : null;
+        const eTag = winnerElim ? `<span style="font-size:9px;font-weight:700;color:var(--err);background:rgba(240,82,82,.15);padding:2px 7px;border-radius:6px;margin-left:7px;border:.5px solid rgba(240,82,82,.4);vertical-align:middle">Éliminé</span>` : '';
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:.5px solid var(--br)">
+          <div>
+            <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">🏆 Vainqueur CDM</div>
+            <div style="font-size:15px;font-weight:700;${winnerElim?'color:var(--err)':''}">${fw} ${pdata.winner}${eTag}</div>
+          </div>
+          ${cw ? `<div style="text-align:right"><div style="font-size:22px;font-weight:800;color:${winnerElim?'var(--err)':'var(--gold)'};">${cw}</div><div style="font-size:10px;color:var(--t3)">pts</div></div>` : ""}
+        </div>`;
+      }
+      if (hasScorer) {
+        const cs = (pdata.coteScorer != null && pdata.coteScorer !== 0) ? pdata.coteScorer : null;
+        const eTagS = scorerElim ? `<span style="font-size:9px;font-weight:700;color:var(--err);background:rgba(240,82,82,.15);padding:2px 7px;border-radius:6px;margin-left:7px;border:.5px solid rgba(240,82,82,.4);vertical-align:middle">Éliminé</span>` : '';
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0">
+          <div>
+            <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">⚽ Meilleur buteur</div>
+            <div style="font-size:15px;font-weight:700;${scorerElim?'color:var(--err)':''}">${isAutreS ? '<span style="color:#f5c842">Autre</span>' : pdata.scorer}${eTagS}</div>
+            ${isAutreS ? '<div style="font-size:11px;color:var(--t3);margin-top:2px">Buteur surprise</div>' : ''}
+          </div>
+          ${cs ? `<div style="text-align:right"><div style="font-size:22px;font-weight:800;color:${scorerElim?'var(--err)':'var(--ac)'};">${cs}</div><div style="font-size:10px;color:var(--t3)">pts</div></div>` : ""}
+        </div>`;
+      }
+      html += '</div>';
+    }
+  }
+
+  // Stratégie & Prédictions
+  html += buildStrategySection(pName);
 
   // Radar
   html += '<div class="prof-card">';
@@ -2390,7 +2623,7 @@ function renderFavorisBody() {
     else { eliminated.add(sh2 > sa2 ? d2.awayTeam : d2.homeTeam); }
   });
 
-  let html = '<div class="sl">🏆 Vainqueur CDM</div>';
+  let html = '<div class="sl" style="margin-top:20px">🏆 Vainqueur CDM</div>';
   ws.forEach(([country,g]) => {
     const cote = g.picks[0]?.cote || "?";
     const isOut = eliminated.has(country);
@@ -2410,7 +2643,7 @@ function renderFavorisBody() {
   if (!ws.length) html += '<div style="padding:16px;text-align:center;color:var(--t3);font-size:13px">Aucun favori renseigné</div>';
 
   // ── Meilleur buteur — classement réel + picks de la ligue ──
-  html += '<div class="sl" style="margin-top:4px">⚽ Meilleur buteur · Classement CDM</div>';
+  html += '<div class="sl" style="margin-top:24px">⚽ Meilleur buteur · Classement CDM</div>';
 
   // Map picks from league players
   const pickedMap = {}; // normalized name → {rawName, picks:[]}
@@ -2449,8 +2682,11 @@ function renderFavorisBody() {
       }
     });
     const medalColor = isWinner ? "var(--gold)" : displayRank<=3?"var(--silver)":displayRank<=5?"var(--bronze)":"var(--t3)";
-    const autreChip = scorer.isAutre ? `<div style="display:flex;align-items:center;gap:4px;padding:2px 9px;border-radius:12px;background:rgba(245,200,66,.12);border:.5px solid rgba(245,200,66,.3)"><span style="font-size:11px;font-weight:700;color:#f5c842">Autre</span><span style="font-size:10px;color:#f5c842;opacity:.75">· 150 pts</span></div>` : '';
-    const showPicks = picks.length > 0 || scorer.isAutre;
+    const autreChip = `<div style="display:flex;align-items:center;gap:4px;padding:2px 9px;border-radius:12px;background:rgba(245,200,66,.12);border:.5px solid rgba(245,200,66,.3)"><span style="font-size:11px;font-weight:700;color:#f5c842">Autre</span><span style="font-size:10px;color:#f5c842;opacity:.75">· 150 pts</span></div>`;
+    // isAutre scorers: only show the Autre badge, not individual player picks
+    const picksRow = scorer.isAutre
+      ? `<div class="fav-players" style="padding-bottom:10px">${autreChip}</div>`
+      : picks.length ? `<div class="fav-players" style="padding-bottom:10px">${picks.map(p=>`<div style="display:flex;align-items:center;gap:4px;padding:2px 9px;border-radius:12px;background:${p.col}22"><span style="font-size:11px;font-weight:600;color:${p.col}">${p.name}</span><span style="font-size:10px;color:${p.col};opacity:.7">· ${p.cote} pts</span></div>`).join("")}</div>` : "";
     html += `<div class="fav-group">
       <div style="display:flex;align-items:center;gap:10px;padding:10px 14px 6px">
         <div style="font-size:13px;font-weight:800;color:${medalColor};min-width:22px;text-align:center">${displayRank}</div>
@@ -2463,7 +2699,7 @@ function renderFavorisBody() {
           <span style="font-size:12px;color:var(--t3)">⚽</span>
         </div>
       </div>
-      ${showPicks ? `<div class="fav-players" style="padding-bottom:10px">${autreChip}${picks.map(p=>`<div style="display:flex;align-items:center;gap:4px;padding:2px 9px;border-radius:12px;background:${p.col}22"><span style="font-size:11px;font-weight:600;color:${p.col}">${p.name}</span><span style="font-size:10px;color:${p.col};opacity:.7">· ${p.cote} pts</span></div>`).join("")}</div>` : ""}
+      ${picksRow}
     </div>`;
   });
 
